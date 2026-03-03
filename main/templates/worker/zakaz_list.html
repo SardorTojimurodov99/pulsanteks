@@ -1,0 +1,42 @@
+{% extends "worker/base.html" %}
+{% block content %}
+<h5>Zakazlar</h5>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-9">
+    <input class="form-control" name="q" value="{{ q }}" placeholder="Qidiruv: mijoz/rang/o‘lcham/lazer/zakaz#">
+  </div>
+  <div class="col-3">
+    <button class="btn btn-primary w-100">Qidirish</button>
+  </div>
+</form>
+
+<a class="btn btn-success btn-sm mb-2" href="{% url 'worker:zakaz_add' %}">+ Zakaz qo‘shish</a>
+
+<div class="table-responsive">
+<table class="table table-sm table-striped">
+  <thead class="table-dark">
+    <tr>
+      <th>ID</th><th>Mijoz</th><th>O‘lcham</th><th>Rang</th><th>Kg</th><th>List</th><th>Finish</th><th>Lazer</th><th>Bosqich</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for o in orders %}
+    <tr>
+      <td>{{ o.id }}</td>
+      <td>{{ o.customer_name }}</td>
+      <td>{{ o.size_mm }}mm</td>
+      <td>{{ o.color.name }}</td>
+      <td>{{ o.kg_plan }}</td>
+      <td>{{ o.list_plan }}</td>
+      <td>{{ o.get_finish_display }}</td>
+      <td>{% if o.laser %}Ha: {{ o.laser_text }}{% else %}Yo‘q{% endif %}</td>
+      <td>{{ o.get_stage_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="9" class="text-center">Hozircha zakaz yo‘q</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

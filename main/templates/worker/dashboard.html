@@ -1,0 +1,89 @@
+{% extends "worker/base.html" %}
+{% block content %}
+
+<h5 class="mb-3">{{ title }}</h5>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-5">
+    <input class="form-control" name="q" value="{{ q }}" placeholder="Qidiruv: mijoz/rang/o‘lcham/lazer/batch/zakaz#">
+  </div>
+
+  <div class="col-6 col-md-3">
+    <select class="form-select" name="machine">
+      <option value="">Aparat (hammasi)</option>
+      {% for m in machines %}
+        <option value="{{ m.code }}" {% if machine == m.code %}selected{% endif %}>{{ m.code }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-3 col-md-2">
+    <div class="form-check mt-2">
+      <input class="form-check-input" type="checkbox" name="paused" value="1" {% if paused %}checked{% endif %}>
+      <label class="form-check-label">Pauza</label>
+    </div>
+  </div>
+
+  <div class="col-3 col-md-1">
+    <div class="form-check mt-2">
+      <input class="form-check-input" type="checkbox" name="done" value="1" {% if done %}checked{% endif %}>
+      <label class="form-check-label">Done</label>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-1">
+    <button class="btn btn-primary w-100">OK</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-sm table-striped align-middle">
+  <thead class="table-dark">
+    <tr>
+      <th>ID</th>
+      <th>Mijoz</th>
+      <th>O‘lcham</th>
+      <th>Rang</th>
+      <th>Bosqich</th>
+      <th>Aparat</th>
+      <th>Kg</th>
+      <th>List</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for b in batches %}
+    <tr>
+      <td>{{ b.id }}</td>
+      <td>{{ b.order.customer_name }}</td>
+      <td>{{ b.order.size_mm }}mm</td>
+      <td>{{ b.order.color.name }}</td>
+      <td>{{ b.get_stage_display }}</td>
+      <td>{% if b.machine %}{{ b.machine.code }}{% else %}-{% endif %}</td>
+      <td>{{ b.kg_done }} / {{ b.kg_plan }}</td>
+      <td>{{ b.list_done }} / {{ b.list_plan }}</td>
+      <td>
+        {% if b.is_done %}
+          <span class="badge bg-success">DONE</span>
+        {% elif b.is_paused %}
+          <span class="badge bg-warning text-dark">PAUZA</span>
+        {% else %}
+          <span class="badge bg-primary">ISHDA</span>
+        {% endif %}
+      </td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'worker:batch_detail' b.id %}">Ochish</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'worker:batch_update' b.id %}">Kg/List</a>
+        <a class="btn btn-sm btn-outline-warning" href="{% url 'worker:batch_pause' b.id %}">Pauza</a>
+        <a class="btn btn-sm btn-outline-success" href="{% url 'worker:batch_done' b.id %}">Done</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="10" class="text-center">Hozircha batch yo‘q</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% endblock %}

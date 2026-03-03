@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Mahsulotlar</title>
+</head>
+<body>
+
+<h1>Mahsulotlar ro‘yxati</h1>
+
+{% for product in products %}
+    <div style="border:1px solid black; padding:10px; margin:10px;">
+        <h3>{{ product.name }}</h3>
+        <p>Narxi: {{ product.price }}</p>
+        <p>Soni: {{ product.quantity }}</p>
+        <p>Qo‘shilgan vaqti: {{ product.created_at }}</p>
+    </div>
+{% empty %}
+    <p>Mahsulot yo‘q</p>
+{% endfor %}
+
+</body>
+</html>

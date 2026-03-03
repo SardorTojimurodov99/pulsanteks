@@ -1,0 +1,27 @@
+{% extends "worker/base.html" %}
+{% block content %}
+<a href="{% url 'worker:dashboard' %}">← Orqaga</a>
+<h5 class="mt-2">Batch #{{ batch.id }}</h5>
+
+<div class="card">
+  <div class="card-body">
+    <div><b>Mijoz:</b> {{ batch.order.customer_name }}</div>
+    <div><b>Rang:</b> {{ batch.order.color.name }}</div>
+    <div><b>O‘lcham:</b> {{ batch.order.size_mm }}mm</div>
+    <div><b>Finish:</b> {{ batch.order.get_finish_display }}</div>
+    <div><b>Lazer:</b> {% if batch.order.laser %}Ha ({{ batch.order.laser_text }}){% else %}Yo‘q{% endif %}</div>
+    <hr>
+    <div><b>Bosqich:</b> {{ batch.get_stage_display }}</div>
+    <div><b>Aparat:</b> {% if batch.machine %}{{ batch.machine.code }}{% else %}-{% endif %}</div>
+    <hr>
+    <div><b>Kg:</b> {{ batch.kg_done }} / {{ batch.kg_plan }}</div>
+    <div><b>List:</b> {{ batch.list_done }} / {{ batch.list_plan }}</div>
+  </div>
+</div>
+
+<div class="mt-3 d-flex gap-2 flex-wrap">
+  <a class="btn btn-secondary" href="{% url 'worker:batch_update' batch.id %}">Kg/List kiritish</a>
+  <a class="btn btn-warning" href="{% url 'worker:batch_pause' batch.id %}">Pauza</a>
+  <a class="btn btn-success" href="{% url 'worker:batch_done' batch.id %}">Done</a>
+</div>
+{% endblock %}

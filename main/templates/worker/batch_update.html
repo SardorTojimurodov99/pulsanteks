@@ -1,0 +1,33 @@
+{% extends "worker/base.html" %}
+{% block content %}
+<a href="{% url 'worker:batch_detail' batch.id %}">← Orqaga</a>
+<h5 class="mt-2">Batch #{{ batch.id }} — Kg/List</h5>
+
+<form method="post" class="card p-3">
+  {% csrf_token %}
+
+  <div class="mb-2">
+    <label class="form-label">Kg (tayyor)</label>
+    <input name="kg_done" class="form-control" value="{{ batch.kg_done }}">
+  </div>
+
+  <div class="mb-2">
+    <label class="form-label">List (tayyor)</label>
+    <input name="list_done" class="form-control" value="{{ batch.list_done }}">
+  </div>
+
+  <div class="mb-2">
+    <label class="form-label">Aparat</label>
+    <select name="machine_code" class="form-select">
+      <option value="">—</option>
+      {% for m in machines %}
+        <option value="{{ m.code }}" {% if batch.machine and batch.machine.code == m.code %}selected{% endif %}>
+          {{ m.code }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button class="btn btn-primary">Saqlash</button>
+</form>
+{% endblock %}
