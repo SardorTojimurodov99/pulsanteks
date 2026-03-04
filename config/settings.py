@@ -7,13 +7,13 @@ from dotenv import load_dotenv
 # BASE
 # =========================
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env")  # local uchun
 
 # =========================
 # SECURITY
 # =========================
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
-DEBUG = os.getenv("DEBUG", "1") == "1"
+DEBUG = os.getenv("DEBUG", "0") == "1"
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
 
@@ -21,6 +21,9 @@ CSRF_TRUSTED_ORIGINS = []
 _csrf = os.getenv("CSRF_TRUSTED_ORIGINS", "")
 if _csrf.strip():
     CSRF_TRUSTED_ORIGINS = [x.strip() for x in _csrf.split(",") if x.strip()]
+
+# Render ba’zan HTTPS behind proxy bo‘ladi
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # =========================
 # APPS
@@ -73,18 +76,38 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # =========================
-# DATABASE (local postgres)
+# DATABASE
+#   - Render: DATABASE_URL beradi (shu ishlaydi)
+#   - Local: DB_* ishlaydi
 # =========================
-DATABASES = {
-    "default": {
-        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.postgresql"),
-        "NAME": os.getenv("DB_NAME", "pulsanteks_db"),
-        "USER": os.getenv("DB_USER", "postgres"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "samarqand"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+if DATABASE_URL:
+    # Render postgres uchun
+    try:
+        import dj_database_url
+    except ImportError:
+        raise RuntimeError("dj-database-url kerak. requirements.txt ga qo‘shing: dj-database-url")
+
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+else:
+    # Local postgres uchun
+    DATABASES = {
+        "default": {
+            "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.postgresql"),
+            "NAME": os.getenv("DB_NAME", "pulsanteks_db"),
+            "USER": os.getenv("DB_USER", "postgres"),
+            "PASSWORD": os.getenv("DB_PASSWORD", "samarqand"),
+            "HOST": os.getenv("DB_HOST", "localhost"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+        }
+    }
 
 # =========================
 # PASSWORD VALIDATORS
@@ -100,9 +123,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # I18N / TZ
 # =========================
 LANGUAGE_CODE = "uz"
-LANGUAGES = [
-    ("uz", _("Uzbek")),
-]
+LANGUAGES = [("uz", _("Uzbek"))]
 TIME_ZONE = "Asia/Tashkent"
 USE_I18N = True
 USE_TZ = True
@@ -111,9 +132,8 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 # =========================
 # STATIC / MEDIA
 # =========================
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# Whitenoise compressed storage (optional but good)
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
