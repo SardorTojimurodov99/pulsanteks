@@ -145,3 +145,14 @@ MEDIA_ROOT = BASE_DIR / "media"
 LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/worker/"
 LOGOUT_REDIRECT_URL = "/admin/login/"
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+if not User.objects.filter(username="sardor").exists():
+    User.objects.create_superuser(
+        username="sardor",
+        email="sardor@example.com",
+        password="12345678"
+    )
