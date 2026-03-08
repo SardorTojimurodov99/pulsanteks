@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Worker panel{% endblock %}
+
+{% block content %}
+<h1>Worker panel</h1>
+
+{% if user_stage %}
+    <div class="card">
+        <p><strong>Sizning bo‘lim:</strong> {{ user_stage }}</p>
+    </div>
+{% else %}
+    <div class="card">
+        <p><strong>Admin rejim:</strong> Barcha batchlar ko‘rinmoqda.</p>
+    </div>
+{% endif %}
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Batch</th>
+                <th>Zakas</th>
+                <th>Firma</th>
+                <th>Razmer</th>
+                <th>Rang</th>
+                <th>List soni</th>
+                <th>Bosqich</th>
+                <th>Holat</th>
+                <th>Amal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for batch in batches %}
+            <tr>
+                <td>{{ batch.batch_no }}</td>
+                <td>{{ batch.order.order_no }}</td>
+                <td>{{ batch.order.customer_name }}</td>
+                <td>{{ batch.order_item.size }}</td>
+                <td>{{ batch.order_item.color }}</td>
+                <td>{{ batch.quantity }}</td>
+                <td>{{ batch.get_stage_display }}</td>
+                <td>{{ batch.get_status_display }}</td>
+                <td>
+                    <a class="btn" href="{% url 'worker_batch_detail' batch.pk %}">Ochish</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9">Hozircha batch yo‘q.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

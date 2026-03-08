@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Worker batch detail{% endblock %}
+
+{% block content %}
+<h1>{{ batch.batch_no }}</h1>
+
+<div class="card">
+    <p><strong>Zakas:</strong> {{ batch.order.order_no }}</p>
+    <p><strong>Firma:</strong> {{ batch.order.customer_name }}</p>
+    <p><strong>Razmer:</strong> {{ batch.order_item.size }}</p>
+    <p><strong>Rang:</strong> {{ batch.order_item.color }}</p>
+    <p><strong>Qavatli:</strong> {% if batch.order_item.is_coated %}Ha{% else %}Yo‘q{% endif %}</p>
+    <p><strong>Qavat izohi:</strong> {{ batch.order_item.coating_note|default:"-" }}</p>
+    <p><strong>Lazer:</strong> {{ batch.order_item.get_laser_display }}</p>
+    <p><strong>Lazer yozuvi:</strong> {{ batch.order_item.laser_note|default:"-" }}</p>
+    <p><strong>Techik soni:</strong> {{ batch.order_item.techik_count }}</p>
+    <p><strong>List soni:</strong> {{ batch.quantity }}</p>
+    <p><strong>Smala kg:</strong> {{ batch.order_item.smala_kg }}</p>
+    <p><strong>Hozirgi bosqich:</strong> {{ batch.get_stage_display }}</p>
+    <p><strong>Holat:</strong> {{ batch.get_status_display }}</p>
+</div>
+
+<div class="card">
+    <h3>Keyingi bosqich</h3>
+    <p><strong>Keyingi stage:</strong> {{ batch.next_stage|default:"Yo‘q" }}</p>
+
+    <form method="post" action="{% url 'worker_done' batch.pk %}">
+        {% csrf_token %}
+        <label for="note">Izoh</label>
+        <textarea name="note" id="note" rows="4"></textarea>
+        <button class="btn" type="submit">Bajarildi</button>
+        <a class="btn btn-secondary" href="{% url 'worker_dashboard' %}">Ortga</a>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Batch tarixi</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Dan</th>
+                <th>Ga</th>
+                <th>Kim</th>
+                <th>Izoh</th>
+                <th>Vaqt</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in batch.logs.all %}
+            <tr>
+                <td>{{ log.from_stage|default:"-" }}</td>
+                <td>{{ log.to_stage }}</td>
+                <td>{{ log.changed_by|default:"-" }}</td>
+                <td>{{ log.note|default:"-" }}</td>
+                <td>{{ log.changed_at }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">Tarix yo‘q.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
