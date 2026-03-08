@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from orders.models import Order, OrderStatus
-from production.models import Batch, BatchStatus
+from orders.models import Order
+from production.models import Batch
 from warehouse.models import WarehouseLot
 from shipping.models import Shipment
 
@@ -8,12 +8,7 @@ from shipping.models import Shipment
 def dashboard_home(request):
     context = {
         "total_orders": Order.objects.count(),
-        "new_orders": Order.objects.filter(status=OrderStatus.NEW).count(),
-        "in_progress_orders": Order.objects.filter(status=OrderStatus.IN_PROGRESS).count(),
-        "ready_orders": Order.objects.filter(status=OrderStatus.READY).count(),
-        "shipped_orders": Order.objects.filter(status=OrderStatus.SHIPPED).count(),
         "total_batches": Batch.objects.count(),
-        "active_batches": Batch.objects.filter(status=BatchStatus.IN_PROGRESS).count(),
         "warehouse_lots": WarehouseLot.objects.count(),
         "shipments": Shipment.objects.count(),
         "latest_orders": Order.objects.order_by("-id")[:10],

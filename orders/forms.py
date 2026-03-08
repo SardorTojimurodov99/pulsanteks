@@ -20,18 +20,17 @@ class OrderItemForm(forms.ModelForm):
         fields = [
             "size",
             "color",
-            "coating",
+            "is_coated",
+            "coating_note",
             "techik_count",
             "surface",
             "laser",
+            "laser_note",
             "sheet_count",
             "button_count",
-            "kg_per_sheet",
+            "smala_kg",
             "note",
         ]
-        widgets = {
-            "kg_per_sheet": forms.NumberInput(attrs={"step": "0.0001"}),
-        }
 
 
 OrderItemFormSet = inlineformset_factory(

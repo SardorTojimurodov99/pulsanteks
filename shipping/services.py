@@ -1,8 +1,5 @@
 from django.db import transaction
-from django.utils import timezone
-
 from .models import Shipment
-from orders.services import recalc_order_status
 from production.models import BatchStatus, Stage
 
 
@@ -10,10 +7,12 @@ def generate_shipment_no():
     last = Shipment.objects.order_by("-id").first()
     if not last:
         return "SHP-0001"
+
     try:
         num = int(last.shipment_no.split("-")[-1])
     except Exception:
         num = last.id
+
     return f"SHP-{num + 1:04d}"
 
 
@@ -29,4 +28,3 @@ def apply_shipment(shipment):
             batch.stage = Stage.JONATISH
             batch.status = BatchStatus.SHIPPED
             batch.save(update_fields=["stage", "status"])
-            recalc_order_status(batch.order)

@@ -1,17 +1,17 @@
 from django.conf import settings
 from django.db import models
-from orders.models import CoatingType, LaserType, Order, OrderItem, SurfaceType
+from orders.models import LaserType
 
 
 class Stage(models.TextChoices):
     QABUL = "QABUL", "Qabul"
-    QUYISH = "QUYISH", "Quyish"
-    APARAT = "APARAT", "Aparat"
+    RANG_TAYYORLASH = "RANG_TAYYORLASH", "Rang tayyorlash"
+    QUYISH = "QUYISH", "Quyuvchi"
+    APPARAT = "APPARAT", "Apparatchi"
+    PALIROFKA = "PALIROFKA", "Palirofkachi"
+    SARTIROVKA = "SARTIROVKA", "Sartirofkachi"
     QAVAT = "QAVAT", "Qavat"
-    MATEVIY = "MATEVIY", "Mateviy"
     LAZER = "LAZER", "Lazer"
-    YUVISH = "YUVISH", "Yuvish"
-    UPAKOVKA = "UPAKOVKA", "Upakovka"
     OMBOR = "OMBOR", "Ombor"
     JONATISH = "JONATISH", "Jo'natish"
 
@@ -26,14 +26,12 @@ class BatchStatus(models.TextChoices):
 
 
 class Batch(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="batches")
-    order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name="batches")
+    order = models.ForeignKey("orders.Order", on_delete=models.CASCADE, related_name="batches")
+    order_item = models.ForeignKey("orders.OrderItem", on_delete=models.CASCADE, related_name="batches")
     batch_no = models.CharField(max_length=50, unique=True)
     quantity = models.PositiveIntegerField(verbose_name="Batch list soni")
     stage = models.CharField(max_length=30, choices=Stage.choices, default=Stage.QABUL)
     status = models.CharField(max_length=20, choices=BatchStatus.choices, default=BatchStatus.NEW)
-    started_at = models.DateTimeField(null=True, blank=True)
-    finished_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -43,16 +41,25 @@ class Batch(models.Model):
         return self.batch_no
 
     def flow(self):
-        flow = [Stage.QABUL, Stage.QUYISH, Stage.APARAT]
+        flow = [
+            Stage.QABUL,
+            Stage.RANG_TAYYORLASH,
+            Stage.QUYISH,
+            Stage.APPARAT,
+            Stage.PALIROFKA,
+            Stage.SARTIROVKA,
+        ]
 
-        if self.order_item.coating in [CoatingType.SADAF, CoatingType.POLEGAL]:
+        if self.order_item.is_coated:
             flow.append(Stage.QAVAT)
-        if self.order_item.surface == SurfaceType.MATTE:
-            flow.append(Stage.MATEVIY)
+
         if self.order_item.laser == LaserType.LASER:
             flow.append(Stage.LAZER)
 
-        flow += [Stage.YUVISH, Stage.UPAKOVKA, Stage.OMBOR, Stage.JONATISH]
+        flow += [
+            Stage.OMBOR,
+            Stage.JONATISH,
+        ]
         return flow
 
     def next_stage(self):
@@ -61,6 +68,7 @@ class Batch(models.Model):
             idx = flow.index(self.stage)
         except ValueError:
             return None
+
         if idx + 1 < len(flow):
             return flow[idx + 1]
         return None
