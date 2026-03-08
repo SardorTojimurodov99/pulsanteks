@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ order.order_no }}</h1>
+<div class="card">
+  <p><strong>Firma:</strong> {{ order.customer_name }}</p>
+  <p><strong>Qabul:</strong> {{ order.accepted_at }}</p>
+  <p><strong>Topshirish:</strong> {{ order.due_at }}</p>
+  <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+</div>
+
+<p>
+  <a class="btn" href="{% url 'order_update' order.pk %}">Tahrirlash</a>
+  <a class="btn btn-danger" href="{% url 'order_delete' order.pk %}">O‘chirish</a>
+</p>
+
+<table>
+  <tr>
+    <th>Razmer</th><th>Rang</th><th>Qavat</th><th>Surface</th><th>Lazer</th>
+    <th>List</th><th>Tugma</th><th>Kg/List</th><th>Smala</th>
+  </tr>
+  {% for item in order.items.all %}
+  <tr>
+    <td>{{ item.size }}</td>
+    <td>{{ item.color }}</td>
+    <td>{{ item.get_coating_display }}</td>
+    <td>{{ item.get_surface_display }}</td>
+    <td>{{ item.get_laser_display }}</td>
+    <td>{{ item.sheet_count }}</td>
+    <td>{{ item.button_count }}</td>
+    <td>{{ item.kg_per_sheet }}</td>
+    <td>{{ item.smala_kg }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

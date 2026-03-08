@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ batch.batch_no }}</h1>
+<div class="card">
+  <p><strong>Zakas:</strong> {{ batch.order.order_no }}</p>
+  <p><strong>Stage:</strong> {{ batch.get_stage_display }}</p>
+  <p><strong>Status:</strong> {{ batch.get_status_display }}</p>
+  <p><strong>Miqdor:</strong> {{ batch.quantity }}</p>
+</div>
+
+<form method="post" action="{% url 'batch_advance' batch.pk %}">
+  {% csrf_token %}
+  <button class="btn" type="submit">Keyingi bosqichga o'tkazish</button>
+</form>
+
+<h2>Tarix</h2>
+<table>
+  <tr><th>Dan</th><th>Ga</th><th>Vaqt</th></tr>
+  {% for log in batch.logs.all %}
+  <tr>
+    <td>{{ log.from_stage }}</td>
+    <td>{{ log.to_stage }}</td>
+    <td>{{ log.changed_at }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="grid">
+  <div class="card">Jami zakazlar: {{ total_orders }}</div>
+  <div class="card">Jarayondagi zakazlar: {{ in_progress_orders }}</div>
+  <div class="card">Jami batchlar: {{ total_batches }}</div>
+  <div class="card">Ombordagi lotlar: {{ warehouse_lots }}</div>
+</div>
+
+<h2>Oxirgi zakazlar</h2>
+<table>
+  <tr>
+    <th>Raqam</th><th>Firma</th><th>Status</th>
+  </tr>
+  {% for order in latest_orders %}
+  <tr>
+    <td><a href="{% url 'order_detail' order.pk %}">{{ order.order_no }}</a></td>
+    <td>{{ order.customer_name }}</td>
+    <td>{{ order.get_status_display }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

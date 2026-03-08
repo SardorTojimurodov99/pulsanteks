@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Zakazlar</h1>
+<p><a class="btn" href="{% url 'order_create' %}">+ Yangi zakas</a></p>
+<table>
+  <tr>
+    <th>Raqam</th><th>Firma</th><th>Sana</th><th>Topshirish</th><th>Status</th><th>List</th><th>Smala</th>
+  </tr>
+  {% for order in orders %}
+  <tr>
+    <td><a href="{% url 'order_detail' order.pk %}">{{ order.order_no }}</a></td>
+    <td>{{ order.customer_name }}</td>
+    <td>{{ order.accepted_at }}</td>
+    <td>{{ order.due_at }}</td>
+    <td>{{ order.get_status_display }}</td>
+    <td>{{ order.total_sheets }}</td>
+    <td>{{ order.total_smala_kg }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Batchlar</h1>
+<table>
+  <tr>
+    <th>Batch</th><th>Zakas</th><th>Miqdor</th><th>Stage</th><th>Status</th>
+  </tr>
+  {% for batch in batches %}
+  <tr>
+    <td><a href="{% url 'batch_detail' batch.pk %}">{{ batch.batch_no }}</a></td>
+    <td>{{ batch.order.order_no }}</td>
+    <td>{{ batch.quantity }}</td>
+    <td>{{ batch.get_stage_display }}</td>
+    <td>{{ batch.get_status_display }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

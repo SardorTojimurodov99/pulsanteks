@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Ombor</h1>
+<table>
+  <tr><th>Batch</th><th>Kirim</th><th>Qoldiq</th><th>Sana</th></tr>
+  {% for lot in lots %}
+  <tr>
+    <td>{{ lot.batch.batch_no }}</td>
+    <td>{{ lot.quantity }}</td>
+    <td>{{ lot.remaining_quantity }}</td>
+    <td>{{ lot.received_at }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

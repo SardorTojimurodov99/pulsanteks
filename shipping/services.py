@@ -1,0 +1,32 @@
+from django.db import transaction
+from django.utils import timezone
+
+from .models import Shipment
+from orders.services import recalc_order_status
+from production.models import BatchStatus, Stage
+
+
+def generate_shipment_no():
+    last = Shipment.objects.order_by("-id").first()
+    if not last:
+        return "SHP-0001"
+    try:
+        num = int(last.shipment_no.split("-")[-1])
+    except Exception:
+        num = last.id
+    return f"SHP-{num + 1:04d}"
+
+
+@transaction.atomic
+def apply_shipment(shipment):
+    for item in shipment.items.select_related("warehouse_lot", "warehouse_lot__batch"):
+        lot = item.warehouse_lot
+        lot.remaining_quantity -= item.quantity
+        lot.save(update_fields=["remaining_quantity"])
+
+        batch = lot.batch
+        if lot.remaining_quantity == 0:
+            batch.stage = Stage.JONATISH
+            batch.status = BatchStatus.SHIPPED
+            batch.save(update_fields=["stage", "status"])
+            recalc_order_status(batch.order)

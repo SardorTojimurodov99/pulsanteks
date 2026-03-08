@@ -1,11 +1,16 @@
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("worker/", include("main.worker_urls")),
+    path("", include("dashboard.urls")),
+    path("orders/", include("orders.urls")),
+    path("production/", include("production.urls")),
+    path("warehouse/", include("warehouse.urls")),
+    path("shipping/", include("shipping.urls")),
+    path("accounts/", include("accounts.urls")),
 ]
 
 if settings.DEBUG:
