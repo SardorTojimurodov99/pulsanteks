@@ -7,28 +7,38 @@ from .forms import OrderForm, OrderItemFormSet
 from .models import Order
 from .services import generate_order_no
 from production.services import create_batches_for_order
+from accounts.utils import redirect_worker_only
 
 
 def order_list(request):
+    blocked = redirect_worker_only(request)
+    if blocked:
+        return blocked
+
     qs = Order.objects.prefetch_related("items").all()
     q = request.GET.get("q", "").strip()
 
     if q:
         qs = qs.filter(Q(order_no__icontains=q) | Q(customer_name__icontains=q))
 
-    return render(request, "orders/order_list.html", {
-        "orders": qs,
-        "q": q,
-    })
+    return render(request, "orders/order_list.html", {"orders": qs, "q": q})
 
 
 def order_detail(request, pk):
-    order = get_object_or_404(Order.objects.prefetch_related("items"), pk=pk)
+    blocked = redirect_worker_only(request)
+    if blocked:
+        return blocked
+
+    order = get_object_or_404(Order.objects.prefetch_related("items", "batches"), pk=pk)
     return render(request, "orders/order_detail.html", {"order": order})
 
 
 @transaction.atomic
 def order_create(request):
+    blocked = redirect_worker_only(request)
+    if blocked:
+        return blocked
+
     if request.method == "POST":
         form = OrderForm(request.POST)
         formset = OrderItemFormSet(request.POST)
@@ -66,6 +76,10 @@ def order_create(request):
 
 @transaction.atomic
 def order_update(request, pk):
+    blocked = redirect_worker_only(request)
+    if blocked:
+        return blocked
+
     order = get_object_or_404(Order, pk=pk)
 
     if request.method == "POST":
@@ -94,6 +108,10 @@ def order_update(request, pk):
 
 @transaction.atomic
 def order_delete(request, pk):
+    blocked = redirect_worker_only(request)
+    if blocked:
+        return blocked
+
     order = get_object_or_404(Order, pk=pk)
 
     if request.method == "POST":

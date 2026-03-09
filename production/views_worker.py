@@ -19,16 +19,15 @@ GROUP_STAGE_MAP = {
 
 def get_user_stages(user):
     """
-    User qaysi stage larni ko'ra olishini qaytaradi.
-    Superuser yoki MASTER bo'lsa hamma stage larni qaytaradi.
+    None qaytsa = hamma stage.
     """
     if user.is_superuser:
-        return None  # None = hamma stage
+        return None
 
     group_names = set(user.groups.values_list("name", flat=True))
 
     if "MASTER" in group_names:
-        return None  # hamma stage
+        return None
 
     stages = []
     for group_name, stage in GROUP_STAGE_MAP.items():
@@ -43,25 +42,29 @@ def worker_dashboard(request):
     allowed_stages = get_user_stages(request.user)
 
     if allowed_stages is None:
-        # superuser yoki MASTER
         batches = Batch.objects.select_related("order", "order_item").all().order_by("stage", "id")
         is_master = True
+        no_role = False
     else:
         if not allowed_stages:
-            messages.error(request, "Sizga hech qanday worker bo‘lim biriktirilmagan.")
             batches = Batch.objects.none()
+            is_master = False
+            no_role = True
+            messages.error(request, "Sizga worker roli biriktirilmagan.")
         else:
             batches = (
                 Batch.objects.select_related("order", "order_item")
                 .filter(stage__in=allowed_stages)
                 .order_by("stage", "id")
             )
-        is_master = False
+            is_master = False
+            no_role = False
 
     return render(request, "production/worker_dashboard.html", {
         "batches": batches,
         "allowed_stages": allowed_stages,
         "is_master": is_master,
+        "no_role": no_role,
     })
 
 
@@ -76,7 +79,7 @@ def worker_batch_detail(request, pk):
 
     if allowed_stages is not None:
         if not allowed_stages:
-            messages.error(request, "Sizga hech qanday worker bo‘lim biriktirilmagan.")
+            messages.error(request, "Sizga worker roli biriktirilmagan.")
             return redirect("worker_dashboard")
 
         if batch.stage not in allowed_stages:
@@ -100,7 +103,7 @@ def worker_done(request, pk):
 
     if allowed_stages is not None:
         if not allowed_stages:
-            messages.error(request, "Sizga hech qanday worker bo‘lim biriktirilmagan.")
+            messages.error(request, "Sizga worker roli biriktirilmagan.")
             return redirect("worker_dashboard")
 
         if batch.stage not in allowed_stages:

@@ -6,20 +6,33 @@ from django.utils import timezone
 from .forms import ShipmentForm, ShipmentItemFormSet
 from .models import Shipment
 from .services import apply_shipment, generate_shipment_no
+from accounts.utils import redirect_worker_only
 
 
 def shipment_list(request):
+    blocked = redirect_worker_only(request)
+    if blocked:
+        return blocked
+
     shipments = Shipment.objects.prefetch_related("items").all()
     return render(request, "shipping/shipment_list.html", {"shipments": shipments})
 
 
 def shipment_detail(request, pk):
+    blocked = redirect_worker_only(request)
+    if blocked:
+        return blocked
+
     shipment = get_object_or_404(Shipment.objects.prefetch_related("items"), pk=pk)
     return render(request, "shipping/shipment_detail.html", {"shipment": shipment})
 
 
 @transaction.atomic
 def shipment_create(request):
+    blocked = redirect_worker_only(request)
+    if blocked:
+        return blocked
+
     if request.method == "POST":
         form = ShipmentForm(request.POST)
         formset = ShipmentItemFormSet(request.POST)

@@ -3,9 +3,14 @@ from orders.models import Order
 from production.models import Batch, BatchStatus
 from warehouse.models import WarehouseLot
 from shipping.models import Shipment
+from accounts.utils import redirect_worker_only
 
 
 def dashboard_home(request):
+    blocked = redirect_worker_only(request)
+    if blocked:
+        return blocked
+
     latest_orders = Order.objects.order_by("-id")[:10]
     latest_batches = Batch.objects.select_related("order").order_by("-id")[:10]
 

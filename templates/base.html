@@ -22,15 +22,20 @@
 </head>
 <body>
     <div class="navbar">
-        <a href="{% url 'dashboard_home' %}">Dashboard</a>
-        <a href="{% url 'order_list' %}">Zakazlar</a>
-        <a href="{% url 'batch_list' %}">Batchlar</a>
-        <a href="{% url 'worker_dashboard' %}">Worker</a>
-        <a href="{% url 'warehouse_list' %}">Ombor</a>
-        <a href="{% url 'shipment_list' %}">Jo'natish</a>
-        <a href="/admin/">Admin</a>
         {% if request.user.is_authenticated %}
-            <a href="{% url 'logout' %}">Chiqish</a>
+            {% if request.user.is_superuser %}
+                <a href="{% url 'dashboard_home' %}">Dashboard</a>
+                <a href="{% url 'order_list' %}">Zakazlar</a>
+                <a href="{% url 'batch_list' %}">Batchlar</a>
+                <a href="{% url 'worker_dashboard' %}">Worker</a>
+                <a href="{% url 'warehouse_list' %}">Ombor</a>
+                <a href="{% url 'shipment_list' %}">Jo'natish</a>
+                <a href="/admin/">Admin</a>
+                <a href="{% url 'logout' %}">Chiqish</a>
+            {% else %}
+                <a href="{% url 'worker_dashboard' %}">Worker</a>
+                <a href="{% url 'logout' %}">Chiqish</a>
+            {% endif %}
         {% else %}
             <a href="{% url 'login' %}">Kirish</a>
         {% endif %}
@@ -42,6 +47,7 @@
                 <div class="message">{{ message }}</div>
             {% endfor %}
         {% endif %}
+
         {% block content %}{% endblock %}
     </div>
 </body>
