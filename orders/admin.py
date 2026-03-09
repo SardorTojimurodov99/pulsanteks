@@ -5,7 +5,6 @@ from .models import Order, OrderItem
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 1
-    readonly_fields = ("smala_kg",)
 
 
 @admin.register(Order)
@@ -15,12 +14,10 @@ class OrderAdmin(admin.ModelAdmin):
         "accepted_at",
         "customer_name",
         "due_at",
-        "status",
-        "total_sheets",
-        "total_smala_kg",
+        "created_at",
     )
-    list_filter = ("status", "accepted_at", "due_at")
     search_fields = ("order_no", "customer_name")
+    list_filter = ("accepted_at", "due_at", "created_at")
     inlines = [OrderItemInline]
 
 
@@ -30,12 +27,24 @@ class OrderItemAdmin(admin.ModelAdmin):
         "order",
         "size",
         "color",
-        "coating",
+        "is_coated",
+        "techik_count",
         "surface",
         "laser",
         "sheet_count",
-        "kg_per_sheet",
+        "button_count",
         "smala_kg",
     )
-    list_filter = ("coating", "surface", "laser")
-    search_fields = ("order__order_no", "order__customer_name", "size", "color")
+    search_fields = (
+        "order__order_no",
+        "order__customer_name",
+        "size",
+        "color",
+        "coating_note",
+        "laser_note",
+    )
+    list_filter = (
+        "is_coated",
+        "surface",
+        "laser",
+    )
