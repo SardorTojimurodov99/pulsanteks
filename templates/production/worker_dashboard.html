@@ -5,15 +5,21 @@
 {% block content %}
 <h1>Worker panel</h1>
 
-{% if user_stage %}
-    <div class="card">
-        <p><strong>Sizning bo‘lim:</strong> {{ user_stage }}</p>
-    </div>
-{% else %}
-    <div class="card">
-        <p><strong>Admin rejim:</strong> Barcha batchlar ko‘rinmoqda.</p>
-    </div>
-{% endif %}
+<div class="card">
+    {% if is_master %}
+        <p><strong>Rejim:</strong> MASTER / Admin</p>
+        <p>Barcha batchlar ko‘rinmoqda.</p>
+    {% else %}
+        <p><strong>Sizga biriktirilgan bosqichlar:</strong></p>
+        <ul>
+            {% for stage in allowed_stages %}
+                <li>{{ stage }}</li>
+            {% empty %}
+                <li>Bo‘lim biriktirilmagan</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>
 
 <div class="card">
     <table>
@@ -25,8 +31,8 @@
                 <th>Razmer</th>
                 <th>Rang</th>
                 <th>List soni</th>
-                <th>Bosqich</th>
-                <th>Holat</th>
+                <th>Stage</th>
+                <th>Status</th>
                 <th>Amal</th>
             </tr>
         </thead>

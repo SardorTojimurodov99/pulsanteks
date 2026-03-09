@@ -1,29 +1,24 @@
-{% extends "base.html" %}
+from django.core.management.base import BaseCommand
+from django.contrib.auth.models import Group
 
-{% block title %}{{ title }}{% endblock %}
 
-{% block content %}
-<h1>{{ title }}</h1>
+GROUPS = [
+    "RANG_TAYYORLOVCHI",
+    "QUYUVCHI",
+    "APPARATCHI",
+    "PALIROFKACHI",
+    "SARTIROVKACHI",
+    "OMBORCHI",
+    "JONATUVCHI",
+    "MASTER",
+]
 
-<form method="post">
-    {% csrf_token %}
 
-    <div class="card">
-        <h3>Jo'natma ma'lumotlari</h3>
-        {{ form.as_p }}
-    </div>
+class Command(BaseCommand):
+    help = "Worker grouplarni yaratadi"
 
-    <div class="card">
-        <h3>Jo'natma qatorlari</h3>
-        {{ formset.management_form }}
-        {% for subform in formset %}
-            <div style="border:1px solid #ddd; padding:12px; margin-bottom:12px; border-radius:8px;">
-                {{ subform.as_p }}
-            </div>
-        {% endfor %}
-    </div>
+    def handle(self, *args, **options):
+        for name in GROUPS:
+            Group.objects.get_or_create(name=name)
 
-    <button class="btn" type="submit">Saqlash</button>
-    <a class="btn btn-secondary" href="{% url 'shipment_list' %}">Bekor qilish</a>
-</form>
-{% endblock %}
+        self.stdout.write(self.style.SUCCESS("Grouplar yaratildi."))
