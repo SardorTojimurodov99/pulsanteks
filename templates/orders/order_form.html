@@ -1,24 +1,90 @@
-from django.core.management.base import BaseCommand
-from django.contrib.auth.models import Group
+{% extends "base.html" %}
 
+{% block title %}{{ title }}{% endblock %}
 
-GROUPS = [
-    "RANG_TAYYORLOVCHI",
-    "QUYUVCHI",
-    "APPARATCHI",
-    "PALIROFKACHI",
-    "SARTIROVKACHI",
-    "OMBORCHI",
-    "JONATUVCHI",
-    "ADMIN",
-]
+{% block content %}
+<h1>{{ title }}</h1>
 
+<form method="post">
+    {% csrf_token %}
 
-class Command(BaseCommand):
-    help = "Worker grouplarni yaratadi"
+    <div class="card">
+        <h3>Zakas ma'lumotlari</h3>
+        {{ form.as_p }}
+    </div>
 
-    def handle(self, *args, **options):
-        for name in GROUPS:
-            Group.objects.get_or_create(name=name)
+    <div class="card">
+        <h3>Zakas qatorlari</h3>
+        {{ formset.management_form }}
 
-        self.stdout.write(self.style.SUCCESS("Grouplar yaratildi."))
+        {% for subform in formset %}
+            <div class="order-item-block" style="border:1px solid #ddd; padding:12px; margin-bottom:12px; border-radius:8px;">
+                {{ subform.id }}
+                {{ subform.non_field_errors }}
+
+                <p>{{ subform.size.label_tag }} {{ subform.size }}</p>
+                <p>{{ subform.color.label_tag }} {{ subform.color }}</p>
+                <p>{{ subform.is_coated.label_tag }} {{ subform.is_coated }}</p>
+
+                <div class="coating-note-wrap">
+                    <p>{{ subform.coating_note.label_tag }} {{ subform.coating_note }}</p>
+                </div>
+
+                <p>{{ subform.techik_count.label_tag }} {{ subform.techik_count }}</p>
+                <p>{{ subform.surface.label_tag }} {{ subform.surface }}</p>
+                <p>{{ subform.laser.label_tag }} {{ subform.laser }}</p>
+
+                <div class="laser-note-wrap">
+                    <p>{{ subform.laser_note.label_tag }} {{ subform.laser_note }}</p>
+                </div>
+
+                <p>{{ subform.sheet_count.label_tag }} {{ subform.sheet_count }}</p>
+                <p>{{ subform.button_count.label_tag }} {{ subform.button_count }}</p>
+                <p>{{ subform.smala_kg.label_tag }} {{ subform.smala_kg }}</p>
+                <p>{{ subform.note.label_tag }} {{ subform.note }}</p>
+
+                {% if subform.DELETE %}
+                    <p>{{ subform.DELETE.label_tag }} {{ subform.DELETE }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <button class="btn" type="submit">Saqlash</button>
+    <a class="btn btn-secondary" href="{% url 'order_list' %}">Bekor qilish</a>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const blocks = document.querySelectorAll(".order-item-block");
+
+    blocks.forEach(function (block) {
+        const coatedInput = block.querySelector('input[type="checkbox"][name$="is_coated"]');
+        const coatingWrap = block.querySelector(".coating-note-wrap");
+
+        const laserSelect = block.querySelector('select[name$="laser"]');
+        const laserWrap = block.querySelector(".laser-note-wrap");
+
+        function toggleCoating() {
+            if (!coatedInput || !coatingWrap) return;
+            coatingWrap.style.display = coatedInput.checked ? "block" : "none";
+        }
+
+        function toggleLaser() {
+            if (!laserSelect || !laserWrap) return;
+            laserWrap.style.display = laserSelect.value === "LASER" ? "block" : "none";
+        }
+
+        if (coatedInput) {
+            coatedInput.addEventListener("change", toggleCoating);
+            toggleCoating();
+        }
+
+        if (laserSelect) {
+            laserSelect.addEventListener("change", toggleLaser);
+            toggleLaser();
+        }
+    });
+});
+</script>
+{% endblock %}
