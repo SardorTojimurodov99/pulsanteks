@@ -21,25 +21,31 @@
     </style>
 </head>
 <body>
-    <div class="navbar">
-        {% if request.user.is_authenticated %}
-            {% if request.user.is_superuser %}
-                <a href="{% url 'dashboard_home' %}">Dashboard</a>
-                <a href="{% url 'order_list' %}">Zakazlar</a>
-                <a href="{% url 'batch_list' %}">Batchlar</a>
-                <a href="{% url 'worker_dashboard' %}">Worker</a>
-                <a href="{% url 'warehouse_list' %}">Ombor</a>
-                <a href="{% url 'shipment_list' %}">Jo'natish</a>
-                <a href="/admin/">Admin</a>
-                <a href="{% url 'logout' %}">Chiqish</a>
-            {% else %}
-                <a href="{% url 'worker_dashboard' %}">Worker</a>
-                <a href="{% url 'logout' %}">Chiqish</a>
-            {% endif %}
+<div class="navbar">
+    {% if request.user.is_authenticated %}
+        {% if request.user.is_superuser %}
+            <a href="{% url 'dashboard_home' %}">Dashboard</a>
+            <a href="{% url 'order_list' %}">Zakazlar</a>
+            <a href="{% url 'batch_list' %}">Batchlar</a>
+            <a href="{% url 'worker_dashboard' %}">Worker</a>
+            <a href="{% url 'warehouse_list' %}">Ombor</a>
+            <a href="{% url 'shipment_list' %}">Jo'natish</a>
+            <a href="/admin/">Admin</a>
         {% else %}
-            <a href="{% url 'login' %}">Kirish</a>
+            <a href="{% url 'worker_dashboard' %}">Worker</a>
         {% endif %}
-    </div>
+
+        <form method="post" action="{% url 'logout' %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" style="background:none;border:none;color:white;cursor:pointer;">
+                Chiqish
+            </button>
+        </form>
+
+    {% else %}
+        <a href="{% url 'login' %}">Kirish</a>
+    {% endif %}
+</div>
 
     <div class="container">
         {% if messages %}
