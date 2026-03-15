@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Jo'natmalar</h1>
+<p><a class="btn" href="{% url 'shipment_create' %}">+ Yangi jo'natma</a></p>
+<table>
+  <tr><th>Raqam</th><th>Firma</th><th>Sana</th></tr>
+  {% for shipment in shipments %}
+  <tr>
+    <td><a href="{% url 'shipment_detail' shipment.pk %}">{{ shipment.shipment_no }}</a></td>
+    <td>{{ shipment.customer_name }}</td>
+    <td>{{ shipment.shipped_at }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

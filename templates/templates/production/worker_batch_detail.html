@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Worker batch detail{% endblock %}
+
+{% block content %}
+<h1>{{ batch.batch_no }}</h1>
+
+<div class="card">
+    <p><strong>Zakas:</strong> {{ batch.order.order_no }}</p>
+    <p><strong>Firma:</strong> {{ batch.order.customer_name }}</p>
+    <p><strong>Razmer:</strong> {{ batch.order_item.size }}</p>
+    <p><strong>Rang:</strong> {{ batch.order_item.color }}</p>
+    <p><strong>Techik soni:</strong> {{ batch.order_item.techik_count }}</p>
+    <p><strong>List soni:</strong> {{ batch.quantity }}</p>
+    <p><strong>Smala kg:</strong> {{ batch.order_item.smala_kg }}</p>
+    <p><strong>Hozirgi bosqich:</strong> {{ batch.get_stage_display }}</p>
+    <p><strong>Holat:</strong> {{ batch.get_status_display }}</p>
+</div>
+
+<div class="card">
+    <h3>Joriy bosqich holati</h3>
+    <p><strong>Qabul qilingan vaqt:</strong> {{ current_progress.accepted_at|default:"-" }}</p>
+    <p><strong>Qabul qilgan:</strong> {{ current_progress.accepted_by|default:"-" }}</p>
+    <p><strong>Tugatilgan vaqt:</strong> {{ current_progress.finished_at|default:"-" }}</p>
+    <p><strong>Tugatgan:</strong> {{ current_progress.finished_by|default:"-" }}</p>
+    <p><strong>Ketgan vaqt (daqiqada):</strong> {{ current_progress.duration_minutes|default:"-" }}</p>
+</div>
+
+<div class="card">
+    <h3>Amallar</h3>
+
+    <form method="post" action="{% url 'worker_accept' batch.pk %}" style="margin-bottom: 16px;">
+        {% csrf_token %}
+        <label for="accept_note">Qabul izohi</label>
+        <textarea name="note" id="accept_note" rows="3"></textarea>
+        <button class="btn btn-secondary" type="submit">Qabul qildim</button>
+    </form>
+
+    <form method="post" action="{% url 'worker_finish' batch.pk %}">
+        {% csrf_token %}
+        <label for="finish_note">Tugatish izohi</label>
+        <textarea name="note" id="finish_note" rows="3"></textarea>
+        <button class="btn" type="submit">Tugatdim</button>
+    </form>
+
+    <br>
+    <a class="btn btn-secondary" href="{% url 'worker_dashboard' %}">Ortga</a>
+</div>
+
+<div class="card">
+    <h3>Batch tarixi</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Dan</th>
+                <th>Ga</th>
+                <th>Kim</th>
+                <th>Izoh</th>
+                <th>Vaqt</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in batch.logs.all %}
+            <tr>
+                <td>{{ log.from_stage|default:"-" }}</td>
+                <td>{{ log.to_stage }}</td>
+                <td>{{ log.changed_by|default:"-" }}</td>
+                <td>{{ log.note|default:"-" }}</td>
+                <td>{{ log.changed_at }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">Tarix yo‘q.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>Barcha bosqichlar bo‘yicha vaqtlar</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Bo‘lim</th>
+                <th>Qabul qilingan</th>
+                <th>Tugatilgan</th>
+                <th>Ketgan vaqt (daq)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in batch.progresses.all %}
+            <tr>
+                <td>{{ p.get_stage_display }}</td>
+                <td>{{ p.accepted_at|default:"-" }}</td>
+                <td>{{ p.finished_at|default:"-" }}</td>
+                <td>{{ p.duration_minutes|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">Progress yo‘q.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

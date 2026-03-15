@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Zakaz yaratish{% endblock %}
+
+{% block content %}
+
+<h1>Zakaz yaratish</h1>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="card">
+        <h3>Zakas ma'lumotlari</h3>
+        {{ form.as_p }}
+    </div>
+
+    <div class="card">
+        <h3>Zakas qatorlari</h3>
+        {{ formset.management_form }}
+
+        {% for subform in formset %}
+        <div style="border:1px solid #ddd; padding:12px; margin-bottom:12px;">
+            {{ subform.as_p }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <button class="btn" type="submit">Saqlash</button>
+
+</form>
+
+{% endblock %}

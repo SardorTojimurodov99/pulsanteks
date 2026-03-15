@@ -1,18 +1,31 @@
 {% extends "base.html" %}
+{% block title %}Batchlar{% endblock %}
 {% block content %}
 <h1>Batchlar</h1>
+<div class="card">
+    <a class="btn" href="{% url 'batch_create' %}">Yangi batch</a>
+</div>
+<div class="card">
 <table>
-  <tr>
-    <th>Batch</th><th>Zakas</th><th>Miqdor</th><th>Stage</th><th>Status</th>
-  </tr>
+  <thead>
+    <tr>
+      <th>Batch</th><th>Zakas</th><th>Qator</th><th>Miqdor</th><th>Stage</th><th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
   {% for batch in batches %}
   <tr>
     <td><a href="{% url 'batch_detail' batch.pk %}">{{ batch.batch_no }}</a></td>
     <td>{{ batch.order.order_no }}</td>
+    <td>{{ batch.order_item.size }} / {{ batch.order_item.color }}</td>
     <td>{{ batch.quantity }}</td>
     <td>{{ batch.get_stage_display }}</td>
     <td>{{ batch.get_status_display }}</td>
   </tr>
+  {% empty %}
+  <tr><td colspan="6">Batch yo'q.</td></tr>
   {% endfor %}
+  </tbody>
 </table>
+</div>
 {% endblock %}

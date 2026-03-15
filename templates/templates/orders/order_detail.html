@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Zakas detail{% endblock %}
+
+{% block content %}
+<h1>{{ order.order_no }}</h1>
+
+<div class="card">
+    <p><strong>Firma:</strong> {{ order.customer_name }}</p>
+    <p><strong>Qabul qilingan sana:</strong> {{ order.accepted_at }}</p>
+    <p><strong>Topshirish vaqti:</strong> {{ order.due_at }}</p>
+    <p><strong>Holati:</strong> {{ order.get_status_display }}</p>
+    <p><strong>Ishlab chiqarishga o'tkazilgan vaqt:</strong> {{ order.released_at|default:"-" }}</p>
+    <p><strong>Izoh:</strong> {{ order.note|default:"-" }}</p>
+</div>
+
+<div class="card">
+    <h3>Zakas qatorlari</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Razmer</th>
+                <th>Rang</th>
+                <th>Qavatli</th>
+                <th>Qavat izohi</th>
+                <th>Techik soni</th>
+                <th>Surface</th>
+                <th>Lazer</th>
+                <th>Lazer yozuvi</th>
+                <th>List soni</th>
+                <th>Tugma soni</th>
+                <th>Smala kg</th>
+                <th>Izoh</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.size }}</td>
+                <td>{{ item.color }}</td>
+                <td>{% if item.is_coated %}Ha{% else %}Yo‘q{% endif %}</td>
+                <td>{{ item.coating_note|default:"-" }}</td>
+                <td>{{ item.techik_count }}</td>
+                <td>{{ item.get_surface_display }}</td>
+                <td>{{ item.get_laser_display }}</td>
+                <td>{{ item.laser_note|default:"-" }}</td>
+                <td>{{ item.sheet_count }}</td>
+                <td>{{ item.button_count }}</td>
+                <td>{{ item.smala_kg }}</td>
+                <td>{{ item.note|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="12">Zakas qatorlari yo‘q.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <a class="btn" href="{% url 'order_update' order.pk %}">Tahrirlash</a>
+    <a class="btn btn-danger" href="{% url 'order_delete' order.pk %}">O‘chirish</a>
+    <a class="btn btn-secondary" href="{% url 'order_list' %}">Ortga</a>
+</div>
+{% endblock %}

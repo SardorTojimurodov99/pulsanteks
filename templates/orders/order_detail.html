@@ -31,6 +31,7 @@
                 <th>Tugma soni</th>
                 <th>Smala kg</th>
                 <th>Izoh</th>
+                <th>Batch</th>
             </tr>
         </thead>
         <tbody>
@@ -48,11 +49,44 @@
                 <td>{{ item.button_count }}</td>
                 <td>{{ item.smala_kg }}</td>
                 <td>{{ item.note|default:"-" }}</td>
+                <td>
+                    {% if order.status == 'RELEASED' %}
+                        <a class="btn btn-secondary" href="{% url 'batch_create' %}?order={{ order.pk }}&item={{ item.pk }}">Batch yaratish</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
             </tr>
             {% empty %}
+            <tr><td colspan="13">Zakas qatorlari yo‘q.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>Batchlar</h3>
+    <table>
+        <thead>
             <tr>
-                <td colspan="12">Zakas qatorlari yo‘q.</td>
+                <th>Batch</th>
+                <th>Qator</th>
+                <th>Miqdor</th>
+                <th>Stage</th>
+                <th>Status</th>
             </tr>
+        </thead>
+        <tbody>
+            {% for batch in order.batches.all %}
+            <tr>
+                <td><a href="{% url 'batch_detail' batch.pk %}">{{ batch.batch_no }}</a></td>
+                <td>{{ batch.order_item.size }} / {{ batch.order_item.color }}</td>
+                <td>{{ batch.quantity }}</td>
+                <td>{{ batch.get_stage_display }}</td>
+                <td>{{ batch.get_status_display }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Batch yo‘q.</td></tr>
             {% endfor %}
         </tbody>
     </table>

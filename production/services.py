@@ -3,7 +3,6 @@ from django.utils import timezone
 
 from .models import (
     BatchStatus,
-    Machine,
     MachineAssignment,
     MachineBreakdown,
     MachineStatus,
@@ -13,45 +12,35 @@ from .models import (
     StageProgress,
 )
 
-DEFAULT_BATCH_SIZE = 3000
-
 
 @transaction.atomic
-def create_batches_for_order(order, batch_size=DEFAULT_BATCH_SIZE):
-    from .models import Batch
+def initialize_batch_tracking(batch, initial_stage=None, changed_by=None, note=""):
+    if initial_stage is None:
+        initial_stage = batch.stage
 
-    created = []
+    for stage in batch.flow():
+        StageProgress.objects.get_or_create(batch=batch, stage=stage)
 
-    for item in order.items.all():
-        remaining = item.sheet_count
-        counter = 1
+    if not batch.logs.exists():
+        StageLog.objects.create(
+            batch=batch,
+            from_stage="",
+            to_stage=initial_stage,
+            changed_by=changed_by,
+            note=note,
+        )
 
-        while remaining > 0:
-            qty = min(batch_size, remaining)
-
-            batch = Batch.objects.create(
-                order=order,
-                order_item=item,
-                batch_no=f"{order.order_no}-{item.id}-{counter}",
-                quantity=qty,
-                stage=Stage.QABUL,
-                status=BatchStatus.NEW,
-            )
-
-            StageLog.objects.create(
-                batch=batch,
-                from_stage="",
-                to_stage=Stage.QABUL,
-            )
-
-            for stage in batch.flow():
-                StageProgress.objects.get_or_create(batch=batch, stage=stage)
-
-            created.append(batch)
-            remaining -= qty
-            counter += 1
-
-    return created
+    batch.stage = initial_stage
+    if batch.status == BatchStatus.HOLD:
+        pass
+    elif initial_stage == Stage.OMBOR:
+        batch.status = BatchStatus.WAREHOUSE
+    elif initial_stage == Stage.JONATISH:
+        batch.status = BatchStatus.SHIPPED
+    else:
+        batch.status = BatchStatus.NEW
+    batch.save(update_fields=["stage", "status"])
+    return batch
 
 
 @transaction.atomic
@@ -69,7 +58,6 @@ def accept_stage(batch, user=None, note=""):
 
     batch.status = BatchStatus.IN_PROGRESS
     batch.save(update_fields=["status"])
-
     return progress
 
 
@@ -96,14 +84,12 @@ def finish_stage(batch, user=None, note=""):
         return batch
 
     batch.stage = nxt
-
     if nxt == Stage.OMBOR:
         batch.status = BatchStatus.WAREHOUSE
     elif nxt == Stage.JONATISH:
         batch.status = BatchStatus.SHIPPED
     else:
         batch.status = BatchStatus.NEW
-
     batch.save(update_fields=["stage", "status"])
 
     StageLog.objects.create(
@@ -114,24 +100,22 @@ def finish_stage(batch, user=None, note=""):
         note=note,
     )
 
+    if nxt == Stage.OMBOR:
+        from warehouse.services import ensure_warehouse_lot
+        ensure_warehouse_lot(batch)
+
     return batch
 
 
 @transaction.atomic
 def advance_batch(batch, user=None, note=""):
-    """
-    Eski viewlar bilan moslik uchun.
-    """
     return finish_stage(batch, user=user, note=note)
 
 
 @transaction.atomic
 def start_machine(batch, machine, user=None, note=""):
     assignment = MachineAssignment.objects.filter(
-        batch=batch,
-        machine=machine,
-        is_active=True,
-        is_finished=False,
+        batch=batch, machine=machine, is_active=True, is_finished=False
     ).first()
 
     if assignment:
@@ -155,40 +139,52 @@ def start_machine(batch, machine, user=None, note=""):
 
     batch.status = BatchStatus.IN_PROGRESS
     batch.save(update_fields=["status"])
-
     return assignment
 
 
 @transaction.atomic
 def pause_machine(batch, machine, note=""):
     assignment = MachineAssignment.objects.filter(
-        batch=batch,
-        machine=machine,
-        is_active=True,
-        is_finished=False,
+        batch=batch, machine=machine, is_active=True, is_finished=False
     ).first()
-
     if not assignment:
         return None
 
     assignment.paused_at = timezone.now()
+    assignment.resumed_at = None
     if note:
         assignment.note = note
-    assignment.save(update_fields=["paused_at", "note"])
+    assignment.save(update_fields=["paused_at", "resumed_at", "note"])
 
     machine.status = MachineStatus.PAUSED
     machine.save(update_fields=["status"])
+    return assignment
 
+
+@transaction.atomic
+def resume_machine(batch, machine, note=""):
+    assignment = MachineAssignment.objects.filter(
+        batch=batch, machine=machine, is_active=True, is_finished=False
+    ).first()
+    if not assignment:
+        return None
+
+    assignment.resumed_at = timezone.now()
+    if note:
+        assignment.note = note
+    assignment.save(update_fields=["resumed_at", "note"])
+
+    machine.status = MachineStatus.RUNNING
+    machine.save(update_fields=["status"])
+    batch.status = BatchStatus.IN_PROGRESS
+    batch.save(update_fields=["status"])
     return assignment
 
 
 @transaction.atomic
 def finish_machine(batch, machine, user=None, note=""):
     assignment = MachineAssignment.objects.filter(
-        batch=batch,
-        machine=machine,
-        is_active=True,
-        is_finished=False,
+        batch=batch, machine=machine, is_active=True, is_finished=False
     ).first()
 
     if not assignment:
@@ -207,7 +203,6 @@ def finish_machine(batch, machine, user=None, note=""):
         if not assignment.started_at:
             assignment.started_at = timezone.now()
             assignment.started_by = user
-
         assignment.finished_at = timezone.now()
         assignment.finished_by = user
         assignment.is_active = False
@@ -218,17 +213,13 @@ def finish_machine(batch, machine, user=None, note=""):
 
     machine.status = MachineStatus.IDLE
     machine.save(update_fields=["status"])
-
     return assignment
 
 
 @transaction.atomic
 def report_machine_breakdown(batch, machine, user=None, reason="", note=""):
     assignment = MachineAssignment.objects.filter(
-        batch=batch,
-        machine=machine,
-        is_active=True,
-        is_finished=False,
+        batch=batch, machine=machine, is_active=True, is_finished=False
     ).first()
 
     if assignment:
@@ -250,7 +241,6 @@ def report_machine_breakdown(batch, machine, user=None, reason="", note=""):
 
     batch.status = BatchStatus.HOLD
     batch.save(update_fields=["status"])
-
     return breakdown
 
 
@@ -263,7 +253,6 @@ def accept_breakdown(breakdown, user=None, note=""):
         if note:
             breakdown.note = note
         breakdown.save()
-
     return breakdown
 
 
@@ -284,5 +273,4 @@ def fix_breakdown(breakdown, user=None, note=""):
     if batch.status == BatchStatus.HOLD:
         batch.status = BatchStatus.IN_PROGRESS
         batch.save(update_fields=["status"])
-
     return breakdown

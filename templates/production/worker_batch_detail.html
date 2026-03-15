@@ -26,9 +26,22 @@
     <p><strong>Ketgan vaqt (daqiqada):</strong> {{ current_progress.duration_minutes|default:"-" }}</p>
 </div>
 
+{% if batch.stage == 'APPARAT' %}
+<div class="card">
+    <h3>Apparatga yuborish</h3>
+    <a class="btn" href="{% url 'machine_panel' %}">Apparatlar paneliga o‘tish</a>
+    {% if active_assignments %}
+        <p><strong>Aktiv apparatlar:</strong></p>
+        <ul>
+        {% for a in active_assignments %}
+            <li>{{ a.machine.code }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+{% else %}
 <div class="card">
     <h3>Amallar</h3>
-
     <form method="post" action="{% url 'worker_accept' batch.pk %}" style="margin-bottom: 16px;">
         {% csrf_token %}
         <label for="accept_note">Qabul izohi</label>
@@ -42,66 +55,10 @@
         <textarea name="note" id="finish_note" rows="3"></textarea>
         <button class="btn" type="submit">Tugatdim</button>
     </form>
+</div>
+{% endif %}
 
-    <br>
+<div class="card">
     <a class="btn btn-secondary" href="{% url 'worker_dashboard' %}">Ortga</a>
-</div>
-
-<div class="card">
-    <h3>Batch tarixi</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Dan</th>
-                <th>Ga</th>
-                <th>Kim</th>
-                <th>Izoh</th>
-                <th>Vaqt</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in batch.logs.all %}
-            <tr>
-                <td>{{ log.from_stage|default:"-" }}</td>
-                <td>{{ log.to_stage }}</td>
-                <td>{{ log.changed_by|default:"-" }}</td>
-                <td>{{ log.note|default:"-" }}</td>
-                <td>{{ log.changed_at }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5">Tarix yo‘q.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<div class="card">
-    <h3>Barcha bosqichlar bo‘yicha vaqtlar</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Bo‘lim</th>
-                <th>Qabul qilingan</th>
-                <th>Tugatilgan</th>
-                <th>Ketgan vaqt (daq)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in batch.progresses.all %}
-            <tr>
-                <td>{{ p.get_stage_display }}</td>
-                <td>{{ p.accepted_at|default:"-" }}</td>
-                <td>{{ p.finished_at|default:"-" }}</td>
-                <td>{{ p.duration_minutes|default:"-" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4">Progress yo‘q.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 </div>
 {% endblock %}

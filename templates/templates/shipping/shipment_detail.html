@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ shipment.shipment_no }}</h1>
+<div class="card">
+  <p><strong>Firma:</strong> {{ shipment.customer_name }}</p>
+  <p><strong>Sana:</strong> {{ shipment.shipped_at }}</p>
+</div>
+<table>
+  <tr><th>Lot</th><th>Miqdor</th></tr>
+  {% for item in shipment.items.all %}
+  <tr>
+    <td>{{ item.warehouse_lot }}</td>
+    <td>{{ item.quantity }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
