@@ -5,8 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import OrderForm, OrderItemFormSet
 from .models import Order
-from .services import generate_order_no
-from production.services import create_batches_for_order
+from .services import generate_order_no, release_order_to_production
 from accounts.utils import redirect_worker_only
 
 
@@ -60,8 +59,14 @@ def order_create(request):
                     "title": "Yangi zakas",
                 })
 
-            create_batches_for_order(order)
-            messages.success(request, "Zakas yaratildi.")
+            action = request.POST.get("action")
+
+            if action == "save_release":
+                release_order_to_production(order)
+                messages.success(request, "Zakas saqlandi va ishlab chiqarishga o'tkazildi.")
+            else:
+                messages.success(request, "Zakas saqlandi.")
+
             return redirect("order_detail", pk=order.pk)
     else:
         form = OrderForm(initial={"order_no": generate_order_no()})
@@ -90,10 +95,15 @@ def order_update(request, pk):
             form.save()
             formset.save()
 
-            order.batches.all().delete()
-            create_batches_for_order(order)
+            action = request.POST.get("action")
 
-            messages.success(request, "Zakas yangilandi.")
+            if action == "save_release":
+                order.batches.all().delete()
+                release_order_to_production(order)
+                messages.success(request, "Zakas yangilandi va ishlab chiqarishga o'tkazildi.")
+            else:
+                messages.success(request, "Zakas yangilandi.")
+
             return redirect("order_detail", pk=order.pk)
     else:
         form = OrderForm(instance=order)

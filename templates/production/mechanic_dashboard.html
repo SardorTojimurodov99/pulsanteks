@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Mexanik bo‘lim{% endblock %}
+
+{% block content %}
+<h1>Mexanik bo‘lim</h1>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Apparat</th>
+                <th>Batch</th>
+                <th>Zakas</th>
+                <th>Holati</th>
+                <th>Xabar vaqti</th>
+                <th>Sabab</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in breakdowns %}
+            <tr>
+                <td>{{ b.machine.code }}</td>
+                <td>{{ b.batch.batch_no }}</td>
+                <td>{{ b.batch.order.order_no }}</td>
+                <td>{{ b.get_status_display }}</td>
+                <td>{{ b.reported_at }}</td>
+                <td>{{ b.reason|default:"-" }}</td>
+                <td>
+                    {% if b.status == "REPORTED" %}
+                        <form method="post" action="{% url 'mechanic_accept' b.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button class="btn btn-secondary" type="submit">Qabul qildim</button>
+                        </form>
+                    {% endif %}
+
+                    {% if b.status != "FIXED" %}
+                        <form method="post" action="{% url 'mechanic_fix' b.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button class="btn" type="submit">Tuzatildi</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7">Buzilgan apparatlar yo‘q.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

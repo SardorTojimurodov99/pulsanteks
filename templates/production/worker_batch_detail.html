@@ -10,10 +10,6 @@
     <p><strong>Firma:</strong> {{ batch.order.customer_name }}</p>
     <p><strong>Razmer:</strong> {{ batch.order_item.size }}</p>
     <p><strong>Rang:</strong> {{ batch.order_item.color }}</p>
-    <p><strong>Qavatli:</strong> {% if batch.order_item.is_coated %}Ha{% else %}Yo‘q{% endif %}</p>
-    <p><strong>Qavat izohi:</strong> {{ batch.order_item.coating_note|default:"-" }}</p>
-    <p><strong>Lazer:</strong> {{ batch.order_item.get_laser_display }}</p>
-    <p><strong>Lazer yozuvi:</strong> {{ batch.order_item.laser_note|default:"-" }}</p>
     <p><strong>Techik soni:</strong> {{ batch.order_item.techik_count }}</p>
     <p><strong>List soni:</strong> {{ batch.quantity }}</p>
     <p><strong>Smala kg:</strong> {{ batch.order_item.smala_kg }}</p>
@@ -22,16 +18,33 @@
 </div>
 
 <div class="card">
-    <h3>Keyingi bosqich</h3>
-    <p><strong>Keyingi stage:</strong> {{ batch.next_stage|default:"Yo‘q" }}</p>
+    <h3>Joriy bosqich holati</h3>
+    <p><strong>Qabul qilingan vaqt:</strong> {{ current_progress.accepted_at|default:"-" }}</p>
+    <p><strong>Qabul qilgan:</strong> {{ current_progress.accepted_by|default:"-" }}</p>
+    <p><strong>Tugatilgan vaqt:</strong> {{ current_progress.finished_at|default:"-" }}</p>
+    <p><strong>Tugatgan:</strong> {{ current_progress.finished_by|default:"-" }}</p>
+    <p><strong>Ketgan vaqt (daqiqada):</strong> {{ current_progress.duration_minutes|default:"-" }}</p>
+</div>
 
-    <form method="post" action="{% url 'worker_done' batch.pk %}">
+<div class="card">
+    <h3>Amallar</h3>
+
+    <form method="post" action="{% url 'worker_accept' batch.pk %}" style="margin-bottom: 16px;">
         {% csrf_token %}
-        <label for="note">Izoh</label>
-        <textarea name="note" id="note" rows="4"></textarea>
-        <button class="btn" type="submit">Bajarildi</button>
-        <a class="btn btn-secondary" href="{% url 'worker_dashboard' %}">Ortga</a>
+        <label for="accept_note">Qabul izohi</label>
+        <textarea name="note" id="accept_note" rows="3"></textarea>
+        <button class="btn btn-secondary" type="submit">Qabul qildim</button>
     </form>
+
+    <form method="post" action="{% url 'worker_finish' batch.pk %}">
+        {% csrf_token %}
+        <label for="finish_note">Tugatish izohi</label>
+        <textarea name="note" id="finish_note" rows="3"></textarea>
+        <button class="btn" type="submit">Tugatdim</button>
+    </form>
+
+    <br>
+    <a class="btn btn-secondary" href="{% url 'worker_dashboard' %}">Ortga</a>
 </div>
 
 <div class="card">
@@ -58,6 +71,34 @@
             {% empty %}
             <tr>
                 <td colspan="5">Tarix yo‘q.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>Barcha bosqichlar bo‘yicha vaqtlar</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Bo‘lim</th>
+                <th>Qabul qilingan</th>
+                <th>Tugatilgan</th>
+                <th>Ketgan vaqt (daq)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in batch.progresses.all %}
+            <tr>
+                <td>{{ p.get_stage_display }}</td>
+                <td>{{ p.accepted_at|default:"-" }}</td>
+                <td>{{ p.finished_at|default:"-" }}</td>
+                <td>{{ p.duration_minutes|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">Progress yo‘q.</td>
             </tr>
             {% endfor %}
         </tbody>

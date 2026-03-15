@@ -7,19 +7,37 @@
 
 <div class="card">
     {% if is_master %}
-        <p><strong>Rejim:</strong> MASTER / Admin</p>
-        <p>Barcha batchlar ko‘rinmoqda.</p>
+        <p><strong>Rejim:</strong> Admin / Master</p>
+        <p>Kerakli bo‘limni tanlab ko‘rishingiz mumkin.</p>
     {% elif no_role %}
         <p><strong>Sizga worker bo‘lim biriktirilmagan.</strong></p>
     {% else %}
-        <p><strong>Sizga biriktirilgan bosqichlar:</strong></p>
-        <ul>
-            {% for stage in allowed_stages %}
-                <li>{{ stage }}</li>
-            {% endfor %}
-        </ul>
+        <p><strong>Siz faqat o‘zingizga biriktirilgan bo‘limlarni ko‘rasiz.</strong></p>
     {% endif %}
 </div>
+
+{% if stage_tabs %}
+<div class="card">
+    <h3>Bo‘limlar</h3>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        {% for tab in stage_tabs %}
+            {% if current_stage == tab.value %}
+                <a href="?stage={{ tab.value }}"
+                   class="btn"
+                   style="font-weight:bold;">
+                    {{ tab.label }}
+                </a>
+            {% else %}
+                <a href="?stage={{ tab.value }}"
+                   class="btn btn-secondary">
+                    {{ tab.label }}
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <div class="card">
     <table>
@@ -48,12 +66,14 @@
                 <td>{{ batch.get_stage_display }}</td>
                 <td>{{ batch.get_status_display }}</td>
                 <td>
-                    <a class="btn" href="{% url 'worker_batch_detail' batch.pk %}">Ochish</a>
+                    <a class="btn" href="{% url 'worker_batch_detail' batch.pk %}">
+                        Ochish
+                    </a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9">Hozircha batch yo‘q.</td>
+                <td colspan="9">Tanlangan bo‘limda batch yo‘q.</td>
             </tr>
             {% endfor %}
         </tbody>

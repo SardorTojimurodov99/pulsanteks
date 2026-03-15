@@ -1,8 +1,9 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+
+from accounts.utils import redirect_worker_only
 from .models import Batch
 from .services import advance_batch
-from accounts.utils import redirect_worker_only
 
 
 def batch_list(request):
@@ -19,7 +20,10 @@ def batch_detail(request, pk):
     if blocked:
         return blocked
 
-    batch = get_object_or_404(Batch.objects.select_related("order", "order_item"), pk=pk)
+    batch = get_object_or_404(
+        Batch.objects.select_related("order", "order_item").prefetch_related("logs", "progresses"),
+        pk=pk,
+    )
     return render(request, "production/batch_detail.html", {"batch": batch})
 
 
@@ -29,7 +33,12 @@ def batch_advance(request, pk):
         return blocked
 
     batch = get_object_or_404(Batch, pk=pk)
+
     if request.method == "POST":
-        advance_batch(batch, user=request.user if request.user.is_authenticated else None)
+        advance_batch(
+            batch,
+            user=request.user if request.user.is_authenticated else None,
+        )
         messages.success(request, "Batch keyingi bosqichga o'tdi.")
+
     return redirect("batch_detail", pk=batch.pk)

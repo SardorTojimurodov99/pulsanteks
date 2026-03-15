@@ -50,7 +50,8 @@
         {% endfor %}
     </div>
 
-    <button class="btn" type="submit">Saqlash</button>
+    <button class="btn btn-secondary" type="submit" name="action" value="save_only">Saqlash</button>
+    <button class="btn" type="submit" name="action" value="save_release">Ishlab chiqarishga o‘tkazish</button>
     <a class="btn btn-secondary" href="{% url 'order_list' %}">Bekor qilish</a>
 </form>
 

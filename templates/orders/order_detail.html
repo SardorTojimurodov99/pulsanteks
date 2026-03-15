@@ -9,6 +9,8 @@
     <p><strong>Firma:</strong> {{ order.customer_name }}</p>
     <p><strong>Qabul qilingan sana:</strong> {{ order.accepted_at }}</p>
     <p><strong>Topshirish vaqti:</strong> {{ order.due_at }}</p>
+    <p><strong>Holati:</strong> {{ order.get_status_display }}</p>
+    <p><strong>Ishlab chiqarishga o'tkazilgan vaqt:</strong> {{ order.released_at|default:"-" }}</p>
     <p><strong>Izoh:</strong> {{ order.note|default:"-" }}</p>
 </div>
 
@@ -55,42 +57,6 @@
         </tbody>
     </table>
 </div>
-
-{% if order.batches.all %}
-<div class="card">
-    <h3>Batchlar</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Batch raqami</th>
-                <th>Miqdor</th>
-                <th>Hozirgi bosqich</th>
-                <th>Holati</th>
-                <th>Yaratilgan vaqt</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for batch in order.batches.all %}
-            <tr>
-                <td>
-                    <a href="{% url 'batch_detail' batch.pk %}">
-                        {{ batch.batch_no }}
-                    </a>
-                </td>
-                <td>{{ batch.quantity }}</td>
-                <td>{{ batch.get_stage_display }}</td>
-                <td>{{ batch.get_status_display }}</td>
-                <td>{{ batch.created_at }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5">Batchlar yo‘q.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% endif %}
 
 <div class="card">
     <a class="btn" href="{% url 'order_update' order.pk %}">Tahrirlash</a>

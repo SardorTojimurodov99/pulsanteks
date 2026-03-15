@@ -35,7 +35,9 @@
             {% if request.user.is_superuser %}
                 <a href="{% url 'dashboard_home' %}">Dashboard</a>
                 <a href="{% url 'order_list' %}">Zakazlar</a>
-                <a href="{% url 'batch_list' %}">Batchlar</a>
+                <a href="{% url 'batch_list' %}">Batchlar</a> 
+                <a href="{% url 'machine_panel' %}">Apparatlar</a>
+                <a href="{% url 'mechanic_dashboard' %}">Mexanik</a>
                 <a href="{% url 'worker_dashboard' %}">Worker</a>
                 <a href="{% url 'warehouse_list' %}">Ombor</a>
                 <a href="{% url 'shipment_list' %}">Jo'natish</a>

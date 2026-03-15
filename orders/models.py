@@ -2,6 +2,11 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 
+class OrderStatus(models.TextChoices):
+    DRAFT = "DRAFT", "Saqlangan"
+    RELEASED = "RELEASED", "Ishlab chiqarishga o'tkazilgan"
+
+
 class SurfaceType(models.TextChoices):
     MATTE = "MATTE", "Mateviy"
     GLOSSY = "GLOSSY", "Yaltiroq"
@@ -18,6 +23,13 @@ class Order(models.Model):
     customer_name = models.CharField(max_length=255, verbose_name="Firma nomi")
     due_at = models.DateTimeField(verbose_name="Topshirish vaqti")
     note = models.TextField(blank=True, verbose_name="Izoh")
+    status = models.CharField(
+        max_length=20,
+        choices=OrderStatus.choices,
+        default=OrderStatus.DRAFT,
+        verbose_name="Holati",
+    )
+    released_at = models.DateTimeField(null=True, blank=True, verbose_name="Ishlab chiqarishga o'tkazilgan vaqt")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -36,11 +48,7 @@ class OrderItem(models.Model):
     color = models.CharField(max_length=100, verbose_name="Rangi")
 
     is_coated = models.BooleanField(default=False, verbose_name="Qavatli")
-    coating_note = models.CharField(
-        max_length=255,
-        blank=True,
-        verbose_name="Qavat izohi"
-    )
+    coating_note = models.CharField(max_length=255, blank=True, verbose_name="Qavat izohi")
 
     techik_count = models.PositiveIntegerField(default=0, verbose_name="Techik soni")
 
@@ -56,11 +64,7 @@ class OrderItem(models.Model):
         default=LaserType.NO_LASER,
         verbose_name="Lazer yoki lazersiz",
     )
-    laser_note = models.CharField(
-        max_length=255,
-        blank=True,
-        verbose_name="Lazer yozuvi"
-    )
+    laser_note = models.CharField(max_length=255, blank=True, verbose_name="Lazer yozuvi")
 
     sheet_count = models.PositiveIntegerField(verbose_name="List soni")
     button_count = models.PositiveIntegerField(default=0, verbose_name="Tugma soni")
@@ -75,8 +79,6 @@ class OrderItem(models.Model):
 
     class Meta:
         ordering = ["id"]
-        verbose_name = "Zakas qatori"
-        verbose_name_plural = "Zakas qatorlari"
 
     def __str__(self):
         return f"{self.order.order_no} / {self.size} / {self.color}"
@@ -84,12 +86,9 @@ class OrderItem(models.Model):
     def clean(self):
         if self.sheet_count <= 0:
             raise ValidationError("List soni 0 dan katta bo'lishi kerak.")
-
         if self.smala_kg <= 0:
             raise ValidationError("Smala kg 0 dan katta bo'lishi kerak.")
-
         if self.is_coated and not self.coating_note.strip():
             raise ValidationError("Qavatli bo'lsa, qavat izohi kiritilishi kerak.")
-
         if self.laser == LaserType.LASER and not self.laser_note.strip():
             raise ValidationError("Lazerli bo'lsa, lazer yozuvi kiritilishi kerak.")

@@ -9,5 +9,17 @@ urlpatterns = [
 
     path("worker/", views_worker.worker_dashboard, name="worker_dashboard"),
     path("worker/batch/<int:pk>/", views_worker.worker_batch_detail, name="worker_batch_detail"),
-    path("worker/batch/<int:pk>/done/", views_worker.worker_done, name="worker_done"),
+    path("worker/batch/<int:pk>/accept/", views_worker.worker_accept, name="worker_accept"),
+    path("worker/batch/<int:pk>/finish/", views_worker.worker_finish, name="worker_finish"),
+
+    path("machines/", views_worker.machine_panel, name="machine_panel"),
+    path("machines/<int:machine_id>/", views_worker.machine_detail, name="machine_detail"),
+    path("machines/<int:machine_id>/start/", views_worker.machine_start, name="machine_start"),
+    path("machines/<int:machine_id>/pause/", views_worker.machine_pause, name="machine_pause"),
+    path("machines/<int:machine_id>/finish/", views_worker.machine_finish, name="machine_finish"),
+    path("machines/<int:machine_id>/broken/", views_worker.machine_broken, name="machine_broken"),
+
+    path("mechanic/", views_worker.mechanic_dashboard, name="mechanic_dashboard"),
+    path("mechanic/<int:breakdown_id>/accept/", views_worker.mechanic_accept, name="mechanic_accept"),
+    path("mechanic/<int:breakdown_id>/fix/", views_worker.mechanic_fix, name="mechanic_fix"),
 ]
