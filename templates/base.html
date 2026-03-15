@@ -16,14 +16,14 @@
             cursor:pointer;
             font: inherit;
         }
-        .container { max-width:1200px; margin:24px auto; background:#fff; border-radius:10px; padding:24px; }
+        .container { max-width:1300px; margin:24px auto; background:#fff; border-radius:10px; padding:24px; }
         .btn { display:inline-block; padding:8px 14px; background:#2563eb; color:#fff; text-decoration:none; border:none; border-radius:6px; cursor:pointer; }
         .btn-danger { background:#dc2626; }
         .btn-secondary { background:#6b7280; }
         .card { background:#fff; border:1px solid #ddd; border-radius:10px; padding:16px; margin-bottom:16px; }
         .grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; }
         table { width:100%; border-collapse:collapse; margin-top:16px; }
-        th, td { border:1px solid #ddd; padding:10px; text-align:left; }
+        th, td { border:1px solid #ddd; padding:10px; text-align:left; vertical-align: top; }
         input, select, textarea { width:100%; padding:8px; margin-top:4px; margin-bottom:12px; box-sizing:border-box; }
         .message { padding:10px; background:#e5f3ff; border-radius:6px; margin-bottom:8px; }
         .inline-form { display:inline; }
@@ -35,15 +35,17 @@
             {% if request.user.is_superuser %}
                 <a href="{% url 'dashboard_home' %}">Dashboard</a>
                 <a href="{% url 'order_list' %}">Zakazlar</a>
-                <a href="{% url 'batch_list' %}">Batchlar</a> 
+                <a href="{% url 'batch_list' %}">Batchlar</a>
+                <a href="{% url 'worker_dashboard' %}">Worker</a>
                 <a href="{% url 'machine_panel' %}">Apparatlar</a>
                 <a href="{% url 'mechanic_dashboard' %}">Mexanik</a>
-                <a href="{% url 'worker_dashboard' %}">Worker</a>
                 <a href="{% url 'warehouse_list' %}">Ombor</a>
                 <a href="{% url 'shipment_list' %}">Jo'natish</a>
                 <a href="/admin/">Admin</a>
             {% else %}
                 <a href="{% url 'worker_dashboard' %}">Worker</a>
+                <a href="{% url 'machine_panel' %}">Apparatlar</a>
+                <a href="{% url 'mechanic_dashboard' %}">Mexanik</a>
             {% endif %}
 
             <form method="post" action="{% url 'logout' %}" class="inline-form">
@@ -61,7 +63,6 @@
                 <div class="message">{{ message }}</div>
             {% endfor %}
         {% endif %}
-
         {% block content %}{% endblock %}
     </div>
 </body>

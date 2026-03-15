@@ -6,94 +6,22 @@
 <h1>Apparatlar paneli</h1>
 
 <style>
-    .machine-groups {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 24px;
-    }
-
-    .machine-group {
-        background: #fff;
-        border: 1px solid #ddd;
-        border-radius: 14px;
-        padding: 18px;
-    }
-
-    .machine-group h2 {
-        margin-top: 0;
-        margin-bottom: 16px;
-    }
-
-    .machine-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 14px;
-    }
-
-    .machine-card {
-        border-radius: 12px;
-        padding: 14px;
-        min-height: 150px;
-        border: 1px solid #ddd;
-    }
-
-    .machine-card h3 {
-        margin: 0 0 10px 0;
-        font-size: 20px;
-    }
-
-    .machine-card p {
-        margin: 4px 0;
-        font-size: 14px;
-    }
-
-    .machine-idle {
-        background: #f3f4f6;
-    }
-
-    .machine-running {
-        background: #dcfce7;
-    }
-
-    .machine-paused {
-        background: #fef3c7;
-    }
-
-    .machine-broken {
-        background: #fee2e2;
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 4px 8px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: bold;
-        margin-bottom: 8px;
-        background: rgba(255,255,255,0.7);
-    }
-
-    .machine-card .btn {
-        margin-top: 10px;
-    }
-
-    @media (max-width: 1000px) {
-        .machine-groups {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (max-width: 700px) {
-        .machine-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media (max-width: 500px) {
-        .machine-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+    .machine-groups { display:grid; grid-template-columns:repeat(2, 1fr); gap:24px; }
+    .machine-group { background:#fff; border:1px solid #ddd; border-radius:14px; padding:18px; }
+    .machine-group h2 { margin-top:0; margin-bottom:16px; }
+    .machine-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
+    .machine-card { border-radius:12px; padding:14px; min-height:150px; border:1px solid #ddd; }
+    .machine-card h3 { margin:0 0 10px 0; font-size:20px; }
+    .machine-card p { margin:4px 0; font-size:14px; }
+    .machine-idle { background:#f3f4f6; }
+    .machine-running { background:#dcfce7; }
+    .machine-paused { background:#fef3c7; }
+    .machine-broken { background:#fee2e2; }
+    .status-badge { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:bold; margin-bottom:8px; background:rgba(255,255,255,0.7); }
+    .machine-card .btn { margin-top:10px; }
+    @media (max-width:1000px) { .machine-groups { grid-template-columns:1fr; } }
+    @media (max-width:700px) { .machine-grid { grid-template-columns:repeat(2, 1fr); } }
+    @media (max-width:500px) { .machine-grid { grid-template-columns:1fr; } }
 </style>
 
 <div class="machine-groups">
@@ -108,10 +36,9 @@
                         {% if machine.status == 'RUNNING' %}machine-running
                         {% elif machine.status == 'PAUSED' %}machine-paused
                         {% elif machine.status == 'BROKEN' %}machine-broken
-                        {% else %}machine-idle{% endif %}
-                    ">
+                        {% else %}machine-idle{% endif %}">
+                        
                         <div class="status-badge">{{ machine.get_status_display }}</div>
-
                         <h3>{{ machine.code }}</h3>
 
                         {% if active %}
