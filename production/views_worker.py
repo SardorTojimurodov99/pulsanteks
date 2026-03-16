@@ -67,35 +67,22 @@ def get_user_stages(user):
 
 def get_machine_rows_for_stage(stage_value):
     if stage_value == Stage.APPARAT:
-        qs = (
-            Machine.objects
-            .filter(is_active=True, department=MachineDepartment.APPARAT)
-            .prefetch_related("assignments__batch", "assignments__batch__order")
-            .order_by("code")
-        )
+        qs = Machine.objects.filter(is_active=True, department=MachineDepartment.APPARAT).order_by("code")
         title = "Apparatlar"
     elif stage_value == Stage.PALIROFKA:
-        qs = (
-            Machine.objects
-            .filter(is_active=True, department=MachineDepartment.PALIROFKA)
-            .prefetch_related("assignments__batch", "assignments__batch__order")
-            .order_by("code")
-        )
+        qs = Machine.objects.filter(is_active=True, department=MachineDepartment.PALIROFKA).order_by("code")
         title = "Palirofka apparatlari"
     else:
         return [], ""
 
     rows = []
     for machine in qs:
-        active_assignment = (
-            machine.assignments
-            .select_related("batch", "batch__order")
-            .filter(is_active=True, is_finished=False)
-            .first()
-        )
+        active_assignments = list(machine.assignments.select_related("batch", "batch__order", "order").filter(is_active=True, is_finished=False))
         rows.append({
             "machine": machine,
-            "active_assignment": active_assignment,
+            "active_assignments": active_assignments,
+            "active_count": len(active_assignments),
+            "remaining_capacity": max(machine.capacity - len(active_assignments), 0),
         })
     return rows, title
 
@@ -121,11 +108,7 @@ def worker_dashboard(request):
             order_qs = order_qs.filter(current_stage__in=visible_stages)
             batch_qs = batch_qs.filter(stage__in=visible_stages)
     else:
-        order_qs = Order.objects.filter(
-            status=OrderStatus.RELEASED,
-            use_order_flow=True,
-            current_stage=requested_stage,
-        )
+        order_qs = Order.objects.filter(status=OrderStatus.RELEASED, use_order_flow=True, current_stage=requested_stage)
         batch_qs = Batch.objects.select_related("order", "order_item").filter(stage=requested_stage)
 
     stage_tabs = [{"value": "all", "label": "Barchasi"}] if (is_master or visible_stages) else []
@@ -246,11 +229,16 @@ def worker_finish(request, pk):
 
 @login_required
 def machine_panel(request):
-    machines = Machine.objects.filter(is_active=True).prefetch_related("assignments__batch", "assignments__batch__order").order_by("department", "code")
+    machines = Machine.objects.filter(is_active=True).order_by("department", "code")
     grouped = {"A": [], "B": [], "C": [], "D": [], "P": []}
     for machine in machines:
-        active_assignment = machine.assignments.select_related("batch", "batch__order").filter(is_active=True, is_finished=False).first()
-        item = {"machine": machine, "active_assignment": active_assignment}
+        active_assignments = list(machine.assignments.select_related("batch", "batch__order", "order").filter(is_active=True, is_finished=False))
+        item = {
+            "machine": machine,
+            "active_assignments": active_assignments,
+            "active_count": len(active_assignments),
+            "remaining_capacity": max(machine.capacity - len(active_assignments), 0),
+        }
         if machine.department == MachineDepartment.PALIROFKA:
             grouped["P"].append(item)
         elif machine.code.startswith("A"):
@@ -267,31 +255,50 @@ def machine_panel(request):
 @login_required
 def machine_detail(request, machine_id):
     machine = get_object_or_404(Machine, pk=machine_id)
-    active_assignment = machine.assignments.select_related("batch", "batch__order").filter(is_active=True, is_finished=False).first()
-    assignments = machine.assignments.select_related("batch", "batch__order").all()
+    active_assignments = list(machine.assignments.select_related("batch", "batch__order", "order").filter(is_active=True, is_finished=False))
+    assignments = machine.assignments.select_related("batch", "batch__order", "order").all()
     available_batches = Batch.objects.select_related("order", "order_item").filter(stage=machine.department, status__in=[BatchStatus.NEW, BatchStatus.PAUSED, BatchStatus.IN_PROGRESS]).order_by("-id")
+    available_orders = Order.objects.filter(status=OrderStatus.RELEASED, use_order_flow=True, current_stage=machine.department).order_by("-id")
     return render(request, "production/machine_detail.html", {
         "machine": machine,
-        "active_assignment": active_assignment,
+        "active_assignments": active_assignments,
         "assignments": assignments,
         "available_batches": available_batches,
+        "available_orders": available_orders,
+        "active_count": len(active_assignments),
+        "remaining_capacity": max(machine.capacity - len(active_assignments), 0),
     })
 
 
 @login_required
 def machine_start(request, machine_id):
     machine = get_object_or_404(Machine, pk=machine_id)
-    batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
-    start_machine(batch, machine, user=request.user, note=request.POST.get("note", "").strip())
-    messages.success(request, "Ish boshlandi.")
+    work_type = request.POST.get("work_type", "batch")
+    note = request.POST.get("note", "").strip()
+    try:
+        if work_type == "order":
+            order = get_object_or_404(Order, pk=request.POST.get("order_id"))
+            start_machine(machine=machine, order=order, user=request.user, note=note)
+        else:
+            batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
+            start_machine(machine=machine, batch=batch, user=request.user, note=note)
+        messages.success(request, "Ish boshlandi.")
+    except Exception as exc:
+        messages.error(request, str(exc))
     return redirect("machine_detail", machine_id=machine.pk)
 
 
 @login_required
 def machine_pause(request, machine_id):
     machine = get_object_or_404(Machine, pk=machine_id)
-    batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
-    pause_machine(batch, machine, note=request.POST.get("note", "").strip())
+    work_type = request.POST.get("work_type", "batch")
+    note = request.POST.get("note", "").strip()
+    if work_type == "order":
+        order = get_object_or_404(Order, pk=request.POST.get("order_id"))
+        pause_machine(machine=machine, order=order, note=note)
+    else:
+        batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
+        pause_machine(machine=machine, batch=batch, note=note)
     messages.warning(request, "Pauza qilindi.")
     return redirect("machine_detail", machine_id=machine.pk)
 
@@ -299,8 +306,14 @@ def machine_pause(request, machine_id):
 @login_required
 def machine_resume(request, machine_id):
     machine = get_object_or_404(Machine, pk=machine_id)
-    batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
-    resume_machine(batch, machine, user=request.user, note=request.POST.get("note", "").strip())
+    work_type = request.POST.get("work_type", "batch")
+    note = request.POST.get("note", "").strip()
+    if work_type == "order":
+        order = get_object_or_404(Order, pk=request.POST.get("order_id"))
+        resume_machine(machine=machine, order=order, user=request.user, note=note)
+    else:
+        batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
+        resume_machine(machine=machine, batch=batch, user=request.user, note=note)
     messages.success(request, "Ish davom ettirildi.")
     return redirect("machine_detail", machine_id=machine.pk)
 
@@ -308,10 +321,16 @@ def machine_resume(request, machine_id):
 @login_required
 def machine_finish(request, machine_id):
     machine = get_object_or_404(Machine, pk=machine_id)
-    batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
+    work_type = request.POST.get("work_type", "batch")
     note = request.POST.get("note", "").strip()
-    finish_machine(batch, machine, user=request.user, note=note)
-    finish_stage(batch, user=request.user, note=note)
+    if work_type == "order":
+        order = get_object_or_404(Order, pk=request.POST.get("order_id"))
+        finish_machine(machine=machine, order=order, user=request.user, note=note)
+        finish_order_stage(order, user=request.user, note=note)
+    else:
+        batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
+        finish_machine(machine=machine, batch=batch, user=request.user, note=note)
+        finish_stage(batch, user=request.user, note=note)
     messages.success(request, "Apparatdagi ish tugatildi.")
     return redirect("machine_detail", machine_id=machine.pk)
 
@@ -319,21 +338,22 @@ def machine_finish(request, machine_id):
 @login_required
 def machine_broken(request, machine_id):
     machine = get_object_or_404(Machine, pk=machine_id)
-    batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
-    report_machine_breakdown(
-        batch,
-        machine,
-        user=request.user,
-        reason=request.POST.get("reason", "").strip(),
-        note=request.POST.get("note", "").strip(),
-    )
+    work_type = request.POST.get("work_type", "batch")
+    reason = request.POST.get("reason", "").strip()
+    note = request.POST.get("note", "").strip()
+    if work_type == "order":
+        order = get_object_or_404(Order, pk=request.POST.get("order_id"))
+        report_machine_breakdown(machine=machine, order=order, user=request.user, reason=reason, note=note)
+    else:
+        batch = get_object_or_404(Batch, pk=request.POST.get("batch_id"))
+        report_machine_breakdown(machine=machine, batch=batch, user=request.user, reason=reason, note=note)
     messages.error(request, "Apparat buzildi.")
     return redirect("machine_detail", machine_id=machine.pk)
 
 
 @login_required
 def mechanic_dashboard(request):
-    breakdowns = MachineBreakdown.objects.select_related("machine", "batch", "batch__order").all()
+    breakdowns = MachineBreakdown.objects.select_related("machine", "batch", "batch__order", "order").all()
     return render(request, "production/mechanic_dashboard.html", {"breakdowns": breakdowns})
 
 

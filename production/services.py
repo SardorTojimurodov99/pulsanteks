@@ -21,6 +21,33 @@ from .models import (
 BATCH_CREATOR_STAGES = {Stage.RANG_TAYYORLASH, Stage.QUYISH, Stage.SARTIROVKA}
 
 
+def _active_assignments(machine):
+    return machine.assignments.filter(is_active=True, is_finished=False)
+
+
+def _refresh_machine_status(machine):
+    if machine.breakdowns.filter(status__in=[RepairStatus.REPORTED, RepairStatus.ACCEPTED]).exists():
+        machine.status = MachineStatus.BROKEN
+    else:
+        active = _active_assignments(machine)
+        if not active.exists():
+            machine.status = MachineStatus.IDLE
+        elif active.filter(paused_at__isnull=True).exists() or active.filter(resumed_at__isnull=False).exists():
+            machine.status = MachineStatus.RUNNING
+        else:
+            machine.status = MachineStatus.PAUSED
+    machine.save(update_fields=["status"])
+
+
+def _resolve_assignment(machine, batch=None, order=None):
+    qs = machine.assignments.filter(is_active=True, is_finished=False)
+    if batch is not None:
+        return qs.filter(batch=batch).first()
+    if order is not None:
+        return qs.filter(order=order).first()
+    return None
+
+
 @transaction.atomic
 def generate_batch_no(order):
     prefix = order.order_no
@@ -183,89 +210,88 @@ def advance_batch(batch, user=None, note=""):
 
 
 @transaction.atomic
-def start_machine(batch, machine, user=None, note=""):
-    assignment = MachineAssignment.objects.filter(
-        batch=batch,
-        machine=machine,
-        is_active=True,
-        is_finished=False,
-    ).first()
-    if assignment:
-        if not assignment.started_at:
-            assignment.started_at = timezone.now()
-            assignment.started_by = user
-        if note:
-            assignment.note = note
-        assignment.save()
-    else:
-        assignment = MachineAssignment.objects.create(
-            batch=batch,
-            machine=machine,
-            started_at=timezone.now(),
-            started_by=user,
-            note=note,
-        )
+def start_machine(machine, user=None, note="", batch=None, order=None):
+    if batch is None and order is None:
+        raise ValueError("Batch yoki order berilishi kerak.")
+    if batch is not None and order is not None:
+        raise ValueError("Bir vaqtning o'zida faqat batch yoki order berilishi kerak.")
 
-    machine.status = MachineStatus.RUNNING
-    machine.save(update_fields=["status"])
-    batch.status = BatchStatus.IN_PROGRESS
-    batch.save(update_fields=["status"])
+    existing = _resolve_assignment(machine, batch=batch, order=order)
+    if existing:
+        if not existing.started_at:
+            existing.started_at = timezone.now()
+            existing.started_by = user
+        if note:
+            existing.note = note
+        existing.save()
+        _refresh_machine_status(machine)
+        if batch is not None:
+            batch.status = BatchStatus.IN_PROGRESS
+            batch.save(update_fields=["status"])
+        return existing
+
+    active_count = _active_assignments(machine).count()
+    if active_count >= machine.capacity:
+        raise ValueError(f"{machine.code} apparatining sig'imi to'lgan.")
+
+    assignment = MachineAssignment.objects.create(
+        batch=batch,
+        order=order,
+        machine=machine,
+        started_at=timezone.now(),
+        started_by=user,
+        note=note,
+    )
+
+    _refresh_machine_status(machine)
+    if batch is not None:
+        batch.status = BatchStatus.IN_PROGRESS
+        batch.save(update_fields=["status"])
+    else:
+        order.status = OrderStatus.RELEASED
+        order.save(update_fields=["status"])
     return assignment
 
 
 @transaction.atomic
-def pause_machine(batch, machine, note=""):
-    assignment = MachineAssignment.objects.filter(
-        batch=batch,
-        machine=machine,
-        is_active=True,
-        is_finished=False,
-    ).first()
+def pause_machine(machine, note="", batch=None, order=None):
+    assignment = _resolve_assignment(machine, batch=batch, order=order)
     if not assignment:
         return None
     assignment.paused_at = timezone.now()
     if note:
         assignment.note = note
     assignment.save(update_fields=["paused_at", "note"])
-    machine.status = MachineStatus.PAUSED
-    machine.save(update_fields=["status"])
-    batch.status = BatchStatus.PAUSED
-    batch.save(update_fields=["status"])
+    if batch is not None:
+        batch.status = BatchStatus.PAUSED
+        batch.save(update_fields=["status"])
+    _refresh_machine_status(machine)
     return assignment
 
 
 @transaction.atomic
-def resume_machine(batch, machine, user=None, note=""):
-    assignment = MachineAssignment.objects.filter(
-        batch=batch,
-        machine=machine,
-        is_active=True,
-        is_finished=False,
-    ).first()
+def resume_machine(machine, user=None, note="", batch=None, order=None):
+    assignment = _resolve_assignment(machine, batch=batch, order=order)
     if not assignment:
         return None
     assignment.resumed_at = timezone.now()
     if note:
         assignment.note = note
     assignment.save(update_fields=["resumed_at", "note"])
-    machine.status = MachineStatus.RUNNING
-    machine.save(update_fields=["status"])
-    batch.status = BatchStatus.IN_PROGRESS
-    batch.save(update_fields=["status"])
+    if batch is not None:
+        batch.status = BatchStatus.IN_PROGRESS
+        batch.save(update_fields=["status"])
+    _refresh_machine_status(machine)
     return assignment
 
 
 @transaction.atomic
-def finish_machine(batch, machine, user=None, note=""):
-    assignment = MachineAssignment.objects.filter(
-        batch=batch,
-        machine=machine,
-        is_active=True,
-        is_finished=False,
-    ).first()
+def finish_machine(machine, user=None, note="", batch=None, order=None):
+    assignment = _resolve_assignment(machine, batch=batch, order=order)
     if not assignment:
         assignment = MachineAssignment.objects.create(
             batch=batch,
+            order=order,
             machine=machine,
             started_at=timezone.now(),
             started_by=user,
@@ -286,29 +312,30 @@ def finish_machine(batch, machine, user=None, note=""):
         if note:
             assignment.note = note
         assignment.save()
-
-    machine.status = MachineStatus.IDLE
-    machine.save(update_fields=["status"])
+    _refresh_machine_status(machine)
     return assignment
 
 
 @transaction.atomic
-def report_machine_breakdown(batch, machine, user=None, reason="", note=""):
-    MachineAssignment.objects.filter(
-        batch=batch,
-        machine=machine,
-        is_active=True,
-        is_finished=False,
-    ).update(paused_at=timezone.now())
+def report_machine_breakdown(machine, user=None, reason="", note="", batch=None, order=None):
+    assignment = _resolve_assignment(machine, batch=batch, order=order)
+    if assignment:
+        assignment.paused_at = timezone.now()
+        if note:
+            assignment.note = note
+        assignment.save(update_fields=["paused_at", "note"])
+
+    if batch is not None:
+        batch.status = BatchStatus.HOLD
+        batch.save(update_fields=["status"])
 
     machine.status = MachineStatus.BROKEN
     machine.save(update_fields=["status"])
-    batch.status = BatchStatus.HOLD
-    batch.save(update_fields=["status"])
 
     return MachineBreakdown.objects.create(
         machine=machine,
         batch=batch,
+        order=order,
         reported_by=user,
         reason=reason,
         note=note,
@@ -336,11 +363,9 @@ def fix_breakdown(breakdown, user=None, note=""):
         breakdown.note = note
     breakdown.save()
 
-    machine = breakdown.machine
-    machine.status = MachineStatus.IDLE
-    machine.save(update_fields=["status"])
+    if breakdown.batch is not None:
+        breakdown.batch.status = BatchStatus.PAUSED
+        breakdown.batch.save(update_fields=["status"])
 
-    batch = breakdown.batch
-    batch.status = BatchStatus.PAUSED
-    batch.save(update_fields=["status"])
+    _refresh_machine_status(breakdown.machine)
     return breakdown

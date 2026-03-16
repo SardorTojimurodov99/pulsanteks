@@ -156,6 +156,7 @@ class Machine(models.Model):
     code = models.CharField(max_length=10, unique=True)
     department = models.CharField(max_length=20, choices=MachineDepartment.choices, default=MachineDepartment.APPARAT)
     status = models.CharField(max_length=20, choices=MachineStatus.choices, default=MachineStatus.IDLE)
+    capacity = models.PositiveIntegerField(default=1, verbose_name="Sig'imi")
     is_active = models.BooleanField(default=True)
     note = models.TextField(blank=True)
 
@@ -167,7 +168,8 @@ class Machine(models.Model):
 
 
 class MachineAssignment(models.Model):
-    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="machine_assignments")
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="machine_assignments", null=True, blank=True)
+    order = models.ForeignKey("orders.Order", on_delete=models.CASCADE, related_name="machine_assignments", null=True, blank=True)
     machine = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name="assignments")
     started_at = models.DateTimeField(null=True, blank=True)
     paused_at = models.DateTimeField(null=True, blank=True)
@@ -194,6 +196,27 @@ class MachineAssignment(models.Model):
     class Meta:
         ordering = ["-id"]
 
+    def clean(self):
+        if bool(self.batch) == bool(self.order):
+            from django.core.exceptions import ValidationError
+            raise ValidationError("MachineAssignment da batch yoki order dan faqat bittasi bo'lishi kerak.")
+
+    @property
+    def work_label(self):
+        if self.batch:
+            return self.batch.batch_no
+        if self.order:
+            return self.order.order_no
+        return "-"
+
+    @property
+    def work_customer(self):
+        if self.batch:
+            return self.batch.order.customer_name
+        if self.order:
+            return self.order.customer_name
+        return "-"
+
     @property
     def duration_minutes(self):
         if self.started_at and self.finished_at:
@@ -204,7 +227,8 @@ class MachineAssignment(models.Model):
 
 class MachineBreakdown(models.Model):
     machine = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name="breakdowns")
-    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="breakdowns")
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="breakdowns", null=True, blank=True)
+    order = models.ForeignKey("orders.Order", on_delete=models.CASCADE, related_name="breakdowns", null=True, blank=True)
     reported_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -235,3 +259,11 @@ class MachineBreakdown(models.Model):
 
     class Meta:
         ordering = ["-id"]
+
+    @property
+    def work_label(self):
+        if self.batch:
+            return self.batch.batch_no
+        if self.order:
+            return self.order.order_no
+        return "-"
