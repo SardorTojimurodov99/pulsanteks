@@ -1,17 +1,7 @@
 {% extends "base.html" %}
+{% block title %}{{ shipment.shipment_no }}{% endblock %}
 {% block content %}
 <h1>{{ shipment.shipment_no }}</h1>
-<div class="card">
-  <p><strong>Firma:</strong> {{ shipment.customer_name }}</p>
-  <p><strong>Sana:</strong> {{ shipment.shipped_at }}</p>
-</div>
-<table>
-  <tr><th>Lot</th><th>Miqdor</th></tr>
-  {% for item in shipment.items.all %}
-  <tr>
-    <td>{{ item.warehouse_lot }}</td>
-    <td>{{ item.quantity }}</td>
-  </tr>
-  {% endfor %}
-</table>
+<div class="card"><p><strong>Firma:</strong> {{ shipment.customer_name }}</p><p><strong>Vaqt:</strong> {{ shipment.shipped_at }}</p><p><strong>Izoh:</strong> {{ shipment.note|default:'-' }}</p></div>
+<div class="card"><table><thead><tr><th>Lot</th><th>Miqdor</th></tr></thead><tbody>{% for item in shipment.items.all %}<tr><td>{{ item.warehouse_lot.batch.batch_no }}</td><td>{{ item.quantity }}</td></tr>{% empty %}<tr><td colspan="2">Item yo'q.</td></tr>{% endfor %}</tbody></table></div>
 {% endblock %}

@@ -5,22 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Pulsan Teks{% endblock %}</title>
     <style>
-        body { font-family: Arial, sans-serif; background:#f5f6fa; margin:0; }
-        .navbar { background:#1f2937; padding:14px 24px; }
-        .navbar a, .navbar button {
-            color:#fff; text-decoration:none; margin-right:16px; background:none; border:none; cursor:pointer; font: inherit;
-        }
-        .container { max-width:1300px; margin:24px auto; background:#fff; border-radius:10px; padding:24px; }
+        body { font-family: Arial, sans-serif; background:#f5f6fa; margin:0; color:#111827; }
+        .navbar { background:#1f2937; padding:14px 24px; display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
+        .navbar a, .navbar button { color:#fff; text-decoration:none; background:none; border:none; cursor:pointer; font:inherit; }
+        .navbar a:hover, .navbar button:hover { opacity:.9; }
+        .container { max-width:1380px; margin:24px auto; background:#fff; border-radius:12px; padding:24px; }
         .btn { display:inline-block; padding:8px 14px; background:#2563eb; color:#fff; text-decoration:none; border:none; border-radius:6px; cursor:pointer; }
         .btn-danger { background:#dc2626; }
         .btn-secondary { background:#6b7280; }
+        .btn-warning { background:#d97706; }
         .card { background:#fff; border:1px solid #ddd; border-radius:10px; padding:16px; margin-bottom:16px; }
-        .grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; }
-        table { width:100%; border-collapse:collapse; margin-top:16px; }
-        th, td { border:1px solid #ddd; padding:10px; text-align:left; vertical-align: top; }
+        .grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
+        .grid-3 { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px; }
+        table { width:100%; border-collapse:collapse; margin-top:12px; }
+        th, td { border:1px solid #ddd; padding:10px; text-align:left; vertical-align:top; }
         input, select, textarea { width:100%; padding:8px; margin-top:4px; margin-bottom:12px; box-sizing:border-box; }
         .message { padding:10px; background:#e5f3ff; border-radius:6px; margin-bottom:8px; }
         .inline-form { display:inline; }
+        .tabs { display:flex; flex-wrap:wrap; gap:10px; }
+        .muted { color:#6b7280; }
+        .two-col { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; }
+        .stats { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px; }
+        @media (max-width: 900px) { .grid,.grid-3,.two-col,.stats { grid-template-columns:1fr; } }
     </style>
 </head>
 <body>
@@ -31,15 +37,11 @@
                 <a href="{% url 'order_list' %}">Zakazlar</a>
                 <a href="{% url 'batch_list' %}">Batchlar</a>
                 <a href="{% url 'worker_dashboard' %}">Worker</a>
-                <a href="{% url 'machine_panel' %}">Apparatlar</a>
-                <a href="{% url 'mechanic_dashboard' %}">Mexanik</a>
                 <a href="{% url 'warehouse_list' %}">Ombor</a>
                 <a href="{% url 'shipment_list' %}">Jo'natish</a>
                 <a href="/admin/">Admin</a>
             {% else %}
                 <a href="{% url 'worker_dashboard' %}">Worker</a>
-                <a href="{% url 'machine_panel' %}">Apparatlar</a>
-                <a href="{% url 'mechanic_dashboard' %}">Mexanik</a>
             {% endif %}
             <form method="post" action="{% url 'logout' %}" class="inline-form">
                 {% csrf_token %}
@@ -49,7 +51,6 @@
             <a href="{% url 'login' %}">Kirish</a>
         {% endif %}
     </div>
-
     <div class="container">
         {% if messages %}
             {% for message in messages %}

@@ -1,115 +1,90 @@
 {% extends "base.html" %}
 
-{% block title %}Apparat {{ machine.code }}{% endblock %}
+{% block title %}{{ machine.code }}{% endblock %}
 
 {% block content %}
-<h1>Apparat {{ machine.code }}</h1>
-
+<h1>{{ machine.code }}</h1>
 <div class="card">
+    <p><strong>Bo'lim:</strong> {{ machine.get_department_display }}</p>
     <p><strong>Holati:</strong> {{ machine.get_status_display }}</p>
-    <p><strong>Izoh:</strong> {{ machine.note|default:"-" }}</p>
 </div>
-
-<div class="card">
-    <h3>Joriy batch</h3>
-    {% if active_assignment %}
-        <p><strong>Batch:</strong> {{ active_assignment.batch.batch_no }}</p>
-        <p><strong>Zakas:</strong> {{ active_assignment.batch.order.order_no }}</p>
-        <p><strong>Firma:</strong> {{ active_assignment.batch.order.customer_name }}</p>
-        <p><strong>Boshlangan vaqt:</strong> {{ active_assignment.started_at|default:"-" }}</p>
-        <p><strong>Pauza vaqti:</strong> {{ active_assignment.paused_at|default:"-" }}</p>
-        <p><strong>Qayta davom ettirilgan:</strong> {{ active_assignment.resumed_at|default:"-" }}</p>
-    {% else %}
-        <p>Hozir aktiv batch yo‘q.</p>
-    {% endif %}
-</div>
-
-<div class="card">
-    <h3>Batch biriktirish / boshlash</h3>
-    <form method="post" action="{% url 'machine_start' machine.pk %}">
-        {% csrf_token %}
-        <label for="batch_id">Batch tanlang</label>
-        <select name="batch_id" id="batch_id">
-            {% for batch in available_batches %}
+<div class="two-col">
+    <div class="card">
+        <h3>Joriy batch</h3>
+        {% if active_assignment %}
+            <p><strong>Batch:</strong> {{ active_assignment.batch.batch_no }}</p>
+            <p><strong>Zakaz:</strong> {{ active_assignment.batch.order.order_no }}</p>
+            <p><strong>Boshlangan:</strong> {{ active_assignment.started_at|default:'-' }}</p>
+            <p><strong>Pauza:</strong> {{ active_assignment.paused_at|default:'-' }}</p>
+        {% else %}
+            <p>Aktiv batch yo'q.</p>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h3>Batch biriktirish</h3>
+        <form method="post" action="{% url 'machine_start' machine.pk %}">
+            {% csrf_token %}
+            <label>Batch</label>
+            <select name="batch_id">
+                {% for batch in available_batches %}
                 <option value="{{ batch.pk }}">{{ batch.batch_no }} - {{ batch.order.customer_name }}</option>
-            {% endfor %}
-        </select>
-
-        <label for="start_note">Izoh</label>
-        <textarea name="note" id="start_note" rows="3"></textarea>
-
-        <button class="btn" type="submit">Boshlash</button>
-    </form>
+                {% endfor %}
+            </select>
+            <label>Izoh</label>
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn" type="submit">Boshlash</button>
+        </form>
+    </div>
 </div>
-
 {% if active_assignment %}
+<div class="grid-3">
+    <div class="card">
+        <form method="post" action="{% url 'machine_pause' machine.pk %}">
+            {% csrf_token %}<input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn btn-secondary" type="submit">Pauza</button>
+        </form>
+    </div>
+    <div class="card">
+        <form method="post" action="{% url 'machine_resume' machine.pk %}">
+            {% csrf_token %}<input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn" type="submit">Davom ettirish</button>
+        </form>
+    </div>
+    <div class="card">
+        <form method="post" action="{% url 'machine_finish' machine.pk %}">
+            {% csrf_token %}<input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn" type="submit">Tugatdi</button>
+        </form>
+    </div>
+</div>
 <div class="card">
-    <h3>Amallar</h3>
-
-    <form method="post" action="{% url 'machine_pause' machine.pk %}" style="margin-bottom: 16px;">
-        {% csrf_token %}
-        <input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
-        <label for="pause_note">Pauza izohi</label>
-        <textarea name="note" id="pause_note" rows="3"></textarea>
-        <button class="btn btn-secondary" type="submit">Pauza</button>
-    </form>
-
-    <form method="post" action="{% url 'machine_resume' machine.pk %}" style="margin-bottom: 16px;">
-        {% csrf_token %}
-        <input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
-        <label for="resume_note">Davom ettirish izohi</label>
-        <textarea name="note" id="resume_note" rows="3"></textarea>
-        <button class="btn btn-secondary" type="submit">Davom et</button>
-    </form>
-
-    <form method="post" action="{% url 'machine_finish' machine.pk %}" style="margin-bottom: 16px;">
-        {% csrf_token %}
-        <input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
-        <label for="finish_note">Tugatish izohi</label>
-        <textarea name="note" id="finish_note" rows="3"></textarea>
-        <button class="btn" type="submit">Tugatdi</button>
-    </form>
-
     <form method="post" action="{% url 'machine_broken' machine.pk %}">
-        {% csrf_token %}
-        <input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
-        <label for="reason">Buzilish sababi</label>
-        <textarea name="reason" id="reason" rows="3" required></textarea>
-
-        <label for="broken_note">Qo‘shimcha izoh</label>
-        <textarea name="note" id="broken_note" rows="3"></textarea>
-
+        {% csrf_token %}<input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
+        <label>Buzilish sababi</label>
+        <textarea name="reason" rows="2"></textarea>
+        <label>Izoh</label>
+        <textarea name="note" rows="2"></textarea>
         <button class="btn btn-danger" type="submit">Buzildi</button>
     </form>
 </div>
 {% endif %}
-
 <div class="card">
     <h3>Tarix</h3>
     <table>
-        <thead>
-            <tr>
-                <th>Batch</th>
-                <th>Boshlangan</th>
-                <th>Pauza</th>
-                <th>Davom et</th>
-                <th>Tugatildi</th>
-                <th>Vaqt (daq)</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Batch</th><th>Boshlangan</th><th>Pauza</th><th>Davom</th><th>Tugatildi</th></tr></thead>
         <tbody>
             {% for a in assignments %}
             <tr>
                 <td>{{ a.batch.batch_no }}</td>
-                <td>{{ a.started_at|default:"-" }}</td>
-                <td>{{ a.paused_at|default:"-" }}</td>
-                <td>{{ a.resumed_at|default:"-" }}</td>
-                <td>{{ a.finished_at|default:"-" }}</td>
-                <td>{{ a.duration_minutes|default:"-" }}</td>
+                <td>{{ a.started_at|default:'-' }}</td>
+                <td>{{ a.paused_at|default:'-' }}</td>
+                <td>{{ a.resumed_at|default:'-' }}</td>
+                <td>{{ a.finished_at|default:'-' }}</td>
             </tr>
-            {% empty %}
-            <tr><td colspan="6">Tarix yo‘q.</td></tr>
-            {% endfor %}
+            {% empty %}<tr><td colspan="5">Tarix yo'q.</td></tr>{% endfor %}
         </tbody>
     </table>
 </div>

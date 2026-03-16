@@ -2,35 +2,6 @@
 {% block title %}{{ batch.batch_no }}{% endblock %}
 {% block content %}
 <h1>{{ batch.batch_no }}</h1>
-<div class="card">
-  <p><strong>Zakas:</strong> {{ batch.order.order_no }}</p>
-  <p><strong>Qator:</strong> {{ batch.order_item.size }} / {{ batch.order_item.color }}</p>
-  <p><strong>Stage:</strong> {{ batch.get_stage_display }}</p>
-  <p><strong>Status:</strong> {{ batch.get_status_display }}</p>
-  <p><strong>Miqdor:</strong> {{ batch.quantity }}</p>
-</div>
-
-<form method="post" action="{% url 'batch_advance' batch.pk %}">
-  {% csrf_token %}
-  <button class="btn" type="submit">Keyingi bosqichga o'tkazish</button>
-</form>
-
-<div class="card">
-<h2>Tarix</h2>
-<table>
-  <thead><tr><th>Dan</th><th>Ga</th><th>Kim</th><th>Vaqt</th></tr></thead>
-  <tbody>
-  {% for log in batch.logs.all %}
-  <tr>
-    <td>{{ log.from_stage|default:'-' }}</td>
-    <td>{{ log.to_stage }}</td>
-    <td>{{ log.changed_by|default:'-' }}</td>
-    <td>{{ log.changed_at }}</td>
-  </tr>
-  {% empty %}
-  <tr><td colspan="4">Tarix yo'q.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-</div>
+<div class="card"><p><strong>Zakaz:</strong> {{ batch.order.order_no }}</p><p><strong>Miqdor:</strong> {{ batch.quantity }} {{ batch.get_unit_type_display }}</p><p><strong>Manba:</strong> {{ batch.get_source_stage_display }}</p><p><strong>Joriy bo'lim:</strong> {{ batch.get_stage_display }}</p><p><strong>Holat:</strong> {{ batch.get_status_display }}</p></div>
+<div class="card"><form method="post" action="{% url 'batch_advance' batch.pk %}">{% csrf_token %}<button class="btn" type="submit">Keyingi bosqichga o'tkazish</button></form></div>
 {% endblock %}

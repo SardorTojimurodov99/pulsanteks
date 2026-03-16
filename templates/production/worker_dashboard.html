@@ -5,34 +5,20 @@
 {% block content %}
 <h1>Worker panel</h1>
 
-<div class="card">
-    {% if is_master %}
-        <p><strong>Rejim:</strong> Admin / Master</p>
-        <p>Kerakli bo‘limni tanlab ko‘rishingiz mumkin.</p>
-    {% elif no_role %}
-        <p><strong>Sizga worker bo‘lim biriktirilmagan.</strong></p>
-    {% else %}
-        <p><strong>Siz faqat o‘zingizga biriktirilgan bo‘limlarni ko‘rasiz.</strong></p>
-    {% endif %}
+<div class="card tabs">
+    <a class="btn" href="{% url 'worker_dashboard' %}">Ishlar</a>
+    <a class="btn btn-secondary" href="{% url 'mechanic_dashboard' %}">Mexanik</a>
 </div>
 
 {% if stage_tabs %}
 <div class="card">
-    <h3>Bo‘limlar</h3>
-
-    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+    <h3>Bo'limlar</h3>
+    <div class="tabs">
         {% for tab in stage_tabs %}
             {% if current_stage == tab.value %}
-                <a href="?stage={{ tab.value }}"
-                   class="btn"
-                   style="font-weight:bold;">
-                    {{ tab.label }}
-                </a>
+                <a href="?stage={{ tab.value }}" class="btn">{{ tab.label }}</a>
             {% else %}
-                <a href="?stage={{ tab.value }}"
-                   class="btn btn-secondary">
-                    {{ tab.label }}
-                </a>
+                <a href="?stage={{ tab.value }}" class="btn btn-secondary">{{ tab.label }}</a>
             {% endif %}
         {% endfor %}
     </div>
@@ -40,17 +26,45 @@
 {% endif %}
 
 <div class="card">
+    <h3>Zakazlar (batchsiz yoki qolgan qismi)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Zakaz</th>
+                <th>Firma</th>
+                <th>Bo'lim</th>
+                <th>Qolgan miqdor</th>
+                <th>Amal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.order_no }}</td>
+                <td>{{ order.customer_name }}</td>
+                <td>{{ order.get_current_stage_display }}</td>
+                <td>{{ order.remaining_quantity_for_current_stage }}</td>
+                <td><a class="btn" href="{% url 'worker_order_detail' order.pk %}">Ochish</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Zakaz yo'q.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>Batchlar</h3>
     <table>
         <thead>
             <tr>
                 <th>Batch</th>
-                <th>Zakas</th>
+                <th>Zakaz</th>
                 <th>Firma</th>
-                <th>Razmer</th>
-                <th>Rang</th>
-                <th>List soni</th>
-                <th>Stage</th>
-                <th>Status</th>
+                <th>Miqdor</th>
+                <th>Birlik</th>
+                <th>Bo'lim</th>
+                <th>Holat</th>
                 <th>Amal</th>
             </tr>
         </thead>
@@ -60,23 +74,58 @@
                 <td>{{ batch.batch_no }}</td>
                 <td>{{ batch.order.order_no }}</td>
                 <td>{{ batch.order.customer_name }}</td>
-                <td>{{ batch.order_item.size }}</td>
-                <td>{{ batch.order_item.color }}</td>
                 <td>{{ batch.quantity }}</td>
+                <td>{{ batch.get_unit_type_display }}</td>
                 <td>{{ batch.get_stage_display }}</td>
                 <td>{{ batch.get_status_display }}</td>
-                <td>
-                    <a class="btn" href="{% url 'worker_batch_detail' batch.pk %}">
-                        Ochish
-                    </a>
-                </td>
+                <td><a class="btn" href="{% url 'worker_batch_detail' batch.pk %}">Ochish</a></td>
             </tr>
             {% empty %}
-            <tr>
-                <td colspan="9">Tanlangan bo‘limda batch yo‘q.</td>
-            </tr>
+            <tr><td colspan="8">Batch yo'q.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+{% if machine_rows %}
+<div class="card">
+    <h3>{{ machine_title }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Kod</th>
+                <th>Holat</th>
+                <th>Joriy batch</th>
+                <th>Zakas</th>
+                <th>Amal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in machine_rows %}
+            <tr>
+                <td>{{ row.machine.code }}</td>
+                <td>{{ row.machine.get_status_display }}</td>
+                <td>
+                    {% if row.active_assignment %}
+                        {{ row.active_assignment.batch.batch_no }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.active_assignment %}
+                        {{ row.active_assignment.batch.order.order_no }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td><a class="btn" href="{% url 'machine_detail' row.machine.pk %}">Ochish</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Apparat yo'q.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 {% endblock %}

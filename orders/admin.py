@@ -1,23 +1,27 @@
 from django.contrib import admin
+
 from .models import Order, OrderItem
 
 
-class OrderItemInline(admin.TabularInline):
+class OrderItemInline(admin.StackedInline):
     model = OrderItem
-    extra = 1
+    extra = 0
+    max_num = 1
 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "order_no",
-        "accepted_at",
         "customer_name",
-        "due_at",
-        "created_at",
+        "order_date",
+        "accepted_at",
+        "current_stage",
+        "status",
+        "use_order_flow",
     )
     search_fields = ("order_no", "customer_name")
-    list_filter = ("accepted_at", "due_at", "created_at")
+    list_filter = ("status", "current_stage", "accepted_at", "order_date")
     inlines = [OrderItemInline]
 
 
@@ -26,25 +30,22 @@ class OrderItemAdmin(admin.ModelAdmin):
     list_display = (
         "order",
         "size",
-        "color",
+        "primary_color",
+        "material_type",
         "is_coated",
-        "techik_count",
         "surface",
         "laser",
         "sheet_count",
         "button_count",
         "smala_kg",
+        "thickness",
     )
     search_fields = (
         "order__order_no",
         "order__customer_name",
         "size",
-        "color",
-        "coating_note",
-        "laser_note",
+        "primary_color",
+        "secondary_color",
+        "pantone",
     )
-    list_filter = (
-        "is_coated",
-        "surface",
-        "laser",
-    )
+    list_filter = ("material_type", "is_coated", "surface", "laser")

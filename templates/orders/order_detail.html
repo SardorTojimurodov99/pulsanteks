@@ -1,67 +1,51 @@
 {% extends "base.html" %}
 
-{% block title %}Zakas detail{% endblock %}
+{% block title %}{{ order.order_no }}{% endblock %}
 
 {% block content %}
 <h1>{{ order.order_no }}</h1>
 
-<div class="card">
-    <p><strong>Firma:</strong> {{ order.customer_name }}</p>
-    <p><strong>Qabul qilingan sana:</strong> {{ order.accepted_at }}</p>
-    <p><strong>Topshirish vaqti:</strong> {{ order.due_at }}</p>
-    <p><strong>Holati:</strong> {{ order.get_status_display }}</p>
-    <p><strong>Ishlab chiqarishga o'tkazilgan vaqt:</strong> {{ order.released_at|default:"-" }}</p>
-    <p><strong>Izoh:</strong> {{ order.note|default:"-" }}</p>
+<div class="stats">
+    <div class="card"><strong>Joriy bo'lim:</strong><br>{{ order.get_current_stage_display }}</div>
+    <div class="card"><strong>Holati:</strong><br>{{ order.get_status_display }}</div>
+    <div class="card"><strong>Qolgan list:</strong><br>{{ order.remaining_list_count }}</div>
+    <div class="card"><strong>Qolgan tugma:</strong><br>{{ order.remaining_button_count }}</div>
+</div>
+
+<div class="two-col">
+    <div class="card">
+        <h3>Zakaz</h3>
+        <p><strong>Sana:</strong> {{ order.order_date }}</p>
+        <p><strong>Qabul qilingan sana:</strong> {{ order.accepted_at }}</p>
+        <p><strong>Firma:</strong> {{ order.customer_name }}</p>
+        <p><strong>Topshirish vaqti:</strong> {{ order.due_at }}</p>
+        <p><strong>Izoh:</strong> {{ order.note|default:'-' }}</p>
+    </div>
+    <div class="card">
+        <h3>Hisob</h3>
+        <p><strong>Umumiy smala:</strong> {{ order.total_smala_kg }}</p>
+        <p><strong>Batchga ketgan list:</strong> {{ order.processed_list_count }}</p>
+        <p><strong>Batchga ketgan tugma:</strong> {{ order.processed_button_count }}</p>
+    </div>
 </div>
 
 <div class="card">
-    <h3>Zakas qatorlari</h3>
+    <h3>Tarkib</h3>
+    {% if item %}
     <table>
-        <thead>
-            <tr>
-                <th>Razmer</th>
-                <th>Rang</th>
-                <th>Qavatli</th>
-                <th>Qavat izohi</th>
-                <th>Techik soni</th>
-                <th>Surface</th>
-                <th>Lazer</th>
-                <th>Lazer yozuvi</th>
-                <th>List soni</th>
-                <th>Tugma soni</th>
-                <th>Smala kg</th>
-                <th>Izoh</th>
-                <th>Batch</th>
-            </tr>
-        </thead>
         <tbody>
-            {% for item in order.items.all %}
-            <tr>
-                <td>{{ item.size }}</td>
-                <td>{{ item.color }}</td>
-                <td>{% if item.is_coated %}Ha{% else %}Yo‘q{% endif %}</td>
-                <td>{{ item.coating_note|default:"-" }}</td>
-                <td>{{ item.techik_count }}</td>
-                <td>{{ item.get_surface_display }}</td>
-                <td>{{ item.get_laser_display }}</td>
-                <td>{{ item.laser_note|default:"-" }}</td>
-                <td>{{ item.sheet_count }}</td>
-                <td>{{ item.button_count }}</td>
-                <td>{{ item.smala_kg }}</td>
-                <td>{{ item.note|default:"-" }}</td>
-                <td>
-                    {% if order.status == 'RELEASED' %}
-                        <a class="btn btn-secondary" href="{% url 'batch_create' %}?order={{ order.pk }}&item={{ item.pk }}">Batch yaratish</a>
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="13">Zakas qatorlari yo‘q.</td></tr>
-            {% endfor %}
+            <tr><th>Razmeri</th><td>{{ item.size }}</td><th>Asosiy rangi</th><td>{{ item.primary_color }}</td></tr>
+            <tr><th>Qavat rangi</th><td>{{ item.secondary_color|default:'-' }}</td><th>Pantone</th><td>{{ item.pantone|default:'-' }}</td></tr>
+            <tr><th>Sadaf / Polegal</th><td>{{ item.get_material_type_display }}</td><th>Qavatli</th><td>{% if item.is_coated %}Ha{% else %}Yo'q{% endif %}</td></tr>
+            <tr><th>Qavat soni</th><td>{{ item.coating_count }}</td><th>Qavat izohi</th><td>{{ item.coating_note|default:'-' }}</td></tr>
+            <tr><th>Teshigi soni</th><td>{{ item.hole_count }}</td><th>Mat / Yalt</th><td>{{ item.get_surface_display }}</td></tr>
+            <tr><th>Lazer</th><td>{{ item.get_laser_display }}</td><th>Lazer yozuvi</th><td>{{ item.laser_note|default:'-' }}</td></tr>
+            <tr><th>List soni</th><td>{{ item.sheet_count }}</td><th>Umumiy tugma soni</th><td>{{ item.button_count }}</td></tr>
+            <tr><th>Smala kg</th><td>{{ item.smala_kg }}</td><th>Qalinligi</th><td>{{ item.thickness }}</td></tr>
+            <tr><th>Izoh</th><td colspan="3">{{ item.note|default:'-' }}</td></tr>
         </tbody>
     </table>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -69,24 +53,22 @@
     <table>
         <thead>
             <tr>
-                <th>Batch</th>
-                <th>Qator</th>
-                <th>Miqdor</th>
-                <th>Stage</th>
-                <th>Status</th>
+                <th>Batch</th><th>Miqdor</th><th>Birlik</th><th>Qayerdan</th><th>Qayerda</th><th>Holat</th><th>Takror</th>
             </tr>
         </thead>
         <tbody>
             {% for batch in order.batches.all %}
             <tr>
                 <td><a href="{% url 'batch_detail' batch.pk %}">{{ batch.batch_no }}</a></td>
-                <td>{{ batch.order_item.size }} / {{ batch.order_item.color }}</td>
                 <td>{{ batch.quantity }}</td>
+                <td>{{ batch.get_unit_type_display }}</td>
+                <td>{{ batch.get_source_stage_display }}</td>
                 <td>{{ batch.get_stage_display }}</td>
                 <td>{{ batch.get_status_display }}</td>
+                <td>{% if batch.is_repeat %}Ha{% else %}Yo'q{% endif %}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5">Batch yo‘q.</td></tr>
+            <tr><td colspan="7">Batch yo'q.</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -94,7 +76,6 @@
 
 <div class="card">
     <a class="btn" href="{% url 'order_update' order.pk %}">Tahrirlash</a>
-    <a class="btn btn-danger" href="{% url 'order_delete' order.pk %}">O‘chirish</a>
-    <a class="btn btn-secondary" href="{% url 'order_list' %}">Ortga</a>
+    <a class="btn btn-danger" href="{% url 'order_delete' order.pk %}">O'chirish</a>
 </div>
 {% endblock %}

@@ -4,9 +4,10 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.utils import redirect_worker_only
-from .forms import OrderForm, OrderItemFormSet
-from .models import Order
-from .services import generate_order_no, release_order_to_production
+from .forms import OrderForm, OrderItemForm
+from .models import Order, OrderItem, OrderStatus
+from .services import generate_order_no, release_order_to_production, refresh_order_done_state
+
 
 
 def order_list(request):
@@ -15,18 +16,13 @@ def order_list(request):
         return blocked
 
     q = request.GET.get("q", "").strip()
-    orders = Order.objects.prefetch_related("items").all().order_by("-id")
+    orders = Order.objects.prefetch_related("items", "batches").all()
 
     if q:
-        orders = orders.filter(
-            Q(order_no__icontains=q) |
-            Q(customer_name__icontains=q)
-        )
+        orders = orders.filter(Q(order_no__icontains=q) | Q(customer_name__icontains=q))
 
-    return render(request, "orders/order_list.html", {
-        "orders": orders,
-        "q": q,
-    })
+    return render(request, "orders/order_list.html", {"orders": orders, "q": q})
+
 
 
 def order_detail(request, pk):
@@ -34,11 +30,9 @@ def order_detail(request, pk):
     if blocked:
         return blocked
 
-    order = get_object_or_404(
-        Order.objects.prefetch_related("items", "batches"),
-        pk=pk
-    )
-    return render(request, "orders/order_detail.html", {"order": order})
+    order = get_object_or_404(Order.objects.prefetch_related("items", "batches", "batches__progresses"), pk=pk)
+    refresh_order_done_state(order)
+    return render(request, "orders/order_detail.html", {"order": order, "item": order.item})
 
 
 @transaction.atomic
@@ -49,42 +43,32 @@ def order_create(request):
 
     if request.method == "POST":
         form = OrderForm(request.POST)
-        formset = OrderItemFormSet(request.POST)
-
-        if form.is_valid() and formset.is_valid():
+        item_form = OrderItemForm(request.POST)
+        if form.is_valid() and item_form.is_valid():
             order = form.save(commit=False)
             if not order.order_no:
                 order.order_no = generate_order_no()
             order.save()
 
-            formset.instance = order
-            items = formset.save()
-
-            if not items:
-                messages.error(request, "Kamida 1 ta zakaz qatori bo‘lishi kerak.")
-                return render(request, "orders/order_form.html", {
-                    "form": form,
-                    "formset": formset,
-                    "title": "Zakaz yaratish",
-                })
+            item = item_form.save(commit=False)
+            item.order = order
+            item.save()
 
             action = request.POST.get("action")
-
             if action == "save_release":
                 release_order_to_production(order)
-                messages.success(request, "Zakaz saqlandi va ishlab chiqarishga o‘tkazildi.")
+                messages.success(request, "Zakaz saqlandi va ishlab chiqarishga o'tkazildi.")
             else:
                 messages.success(request, "Zakaz saqlandi.")
 
             return redirect("order_detail", pk=order.pk)
-
     else:
         form = OrderForm(initial={"order_no": generate_order_no()})
-        formset = OrderItemFormSet()
+        item_form = OrderItemForm()
 
     return render(request, "orders/order_form.html", {
         "form": form,
-        "formset": formset,
+        "item_form": item_form,
         "title": "Zakaz yaratish",
     })
 
@@ -96,32 +80,27 @@ def order_update(request, pk):
         return blocked
 
     order = get_object_or_404(Order, pk=pk)
+    item = order.item or OrderItem(order=order)
 
     if request.method == "POST":
         form = OrderForm(request.POST, instance=order)
-        formset = OrderItemFormSet(request.POST, instance=order)
-
-        if form.is_valid() and formset.is_valid():
+        item_form = OrderItemForm(request.POST, instance=item)
+        if form.is_valid() and item_form.is_valid():
             form.save()
-            formset.save()
-
-            action = request.POST.get("action")
-            if action == "save_release":
-                order.batches.all().delete()
-                release_order_to_production(order)
-                messages.success(request, "Zakaz yangilandi va ishlab chiqarishga o‘tkazildi.")
-            else:
-                messages.success(request, "Zakaz yangilandi.")
-
+            item = item_form.save(commit=False)
+            item.order = order
+            item.save()
+            messages.success(request, "Zakaz yangilandi.")
             return redirect("order_detail", pk=order.pk)
     else:
         form = OrderForm(instance=order)
-        formset = OrderItemFormSet(instance=order)
+        item_form = OrderItemForm(instance=item)
 
     return render(request, "orders/order_form.html", {
         "form": form,
-        "formset": formset,
+        "item_form": item_form,
         "title": "Zakazni tahrirlash",
+        "order": order,
     })
 
 
@@ -132,10 +111,8 @@ def order_delete(request, pk):
         return blocked
 
     order = get_object_or_404(Order, pk=pk)
-
     if request.method == "POST":
         order.delete()
-        messages.success(request, "Zakaz o‘chirildi.")
+        messages.success(request, "Zakaz o'chirildi.")
         return redirect("order_list")
-
     return render(request, "orders/order_confirm_delete.html", {"order": order})

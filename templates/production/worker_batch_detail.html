@@ -1,64 +1,57 @@
 {% extends "base.html" %}
 
-{% block title %}Worker batch detail{% endblock %}
+{% block title %}{{ batch.batch_no }}{% endblock %}
 
 {% block content %}
 <h1>{{ batch.batch_no }}</h1>
 
 <div class="card">
-    <p><strong>Zakas:</strong> {{ batch.order.order_no }}</p>
+    <p><strong>Zakaz:</strong> {{ batch.order.order_no }}</p>
     <p><strong>Firma:</strong> {{ batch.order.customer_name }}</p>
-    <p><strong>Razmer:</strong> {{ batch.order_item.size }}</p>
-    <p><strong>Rang:</strong> {{ batch.order_item.color }}</p>
-    <p><strong>Techik soni:</strong> {{ batch.order_item.techik_count }}</p>
-    <p><strong>List soni:</strong> {{ batch.quantity }}</p>
-    <p><strong>Smala kg:</strong> {{ batch.order_item.smala_kg }}</p>
-    <p><strong>Hozirgi bosqich:</strong> {{ batch.get_stage_display }}</p>
+    <p><strong>Miqdor:</strong> {{ batch.quantity }} {{ batch.get_unit_type_display }}</p>
+    <p><strong>Manba bo'lim:</strong> {{ batch.get_source_stage_display }}</p>
+    <p><strong>Joriy bo'lim:</strong> {{ batch.get_stage_display }}</p>
     <p><strong>Holat:</strong> {{ batch.get_status_display }}</p>
+    {% if batch.inspection_note %}<p><strong>Rang nazorati:</strong> {{ batch.inspection_note }}</p>{% endif %}
+    {% if batch.scrap_quantity %}<p><strong>Brak:</strong> {{ batch.scrap_quantity }}</p>{% endif %}
+</div>
+
+<div class="two-col">
+    <div class="card">
+        <h3>Qabul</h3>
+        <form method="post" action="{% url 'worker_accept' batch.pk %}">
+            {% csrf_token %}
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn btn-secondary" type="submit">Qabul qildim</button>
+        </form>
+    </div>
+    <div class="card">
+        <h3>Tugatish</h3>
+        <form method="post" action="{% url 'worker_finish' batch.pk %}">
+            {% csrf_token %}
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn" type="submit">Tugatdim</button>
+        </form>
+    </div>
 </div>
 
 <div class="card">
-    <h3>Joriy bosqich holati</h3>
-    <p><strong>Qabul qilingan vaqt:</strong> {{ current_progress.accepted_at|default:"-" }}</p>
-    <p><strong>Qabul qilgan:</strong> {{ current_progress.accepted_by|default:"-" }}</p>
-    <p><strong>Tugatilgan vaqt:</strong> {{ current_progress.finished_at|default:"-" }}</p>
-    <p><strong>Tugatgan:</strong> {{ current_progress.finished_by|default:"-" }}</p>
-    <p><strong>Ketgan vaqt (daqiqada):</strong> {{ current_progress.duration_minutes|default:"-" }}</p>
-</div>
-
-{% if batch.stage == 'APPARAT' %}
-<div class="card">
-    <h3>Apparatga yuborish</h3>
-    <a class="btn" href="{% url 'machine_panel' %}">Apparatlar paneliga o‘tish</a>
-    {% if active_assignments %}
-        <p><strong>Aktiv apparatlar:</strong></p>
-        <ul>
-        {% for a in active_assignments %}
-            <li>{{ a.machine.code }}</li>
-        {% endfor %}
-        </ul>
-    {% endif %}
-</div>
-{% else %}
-<div class="card">
-    <h3>Amallar</h3>
-    <form method="post" action="{% url 'worker_accept' batch.pk %}" style="margin-bottom: 16px;">
-        {% csrf_token %}
-        <label for="accept_note">Qabul izohi</label>
-        <textarea name="note" id="accept_note" rows="3"></textarea>
-        <button class="btn btn-secondary" type="submit">Qabul qildim</button>
-    </form>
-
-    <form method="post" action="{% url 'worker_finish' batch.pk %}">
-        {% csrf_token %}
-        <label for="finish_note">Tugatish izohi</label>
-        <textarea name="note" id="finish_note" rows="3"></textarea>
-        <button class="btn" type="submit">Tugatdim</button>
-    </form>
-</div>
-{% endif %}
-
-<div class="card">
-    <a class="btn btn-secondary" href="{% url 'worker_dashboard' %}">Ortga</a>
+    <h3>Tarix</h3>
+    <table>
+        <thead><tr><th>Dan</th><th>Ga</th><th>Kim</th><th>Vaqt</th><th>Izoh</th></tr></thead>
+        <tbody>
+            {% for log in batch.logs.all %}
+            <tr>
+                <td>{{ log.from_stage|default:'-' }}</td>
+                <td>{{ log.to_stage }}</td>
+                <td>{{ log.changed_by|default:'-' }}</td>
+                <td>{{ log.changed_at }}</td>
+                <td>{{ log.note|default:'-' }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Tarix yo'q.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

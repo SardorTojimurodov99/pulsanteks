@@ -1,35 +1,41 @@
 from django import forms
-from .models import Batch, Stage
-from orders.models import Order, OrderItem
+
+from .models import Stage
 
 
-class BatchForm(forms.ModelForm):
-    order = forms.ModelChoiceField(
-        queryset=Order.objects.filter(status="RELEASED").order_by("-id"),
-        label="Zakas",
-    )
-    order_item = forms.ModelChoiceField(
-        queryset=OrderItem.objects.select_related("order").all().order_by("order_id", "id"),
-        label="Zakas qatori",
-    )
+class BatchCreateForm(forms.Form):
+    quantity = forms.IntegerField(min_value=1, label="Miqdor")
+    is_repeat = forms.BooleanField(required=False, label="Takror batch")
+    scrap_quantity = forms.IntegerField(min_value=0, required=False, initial=0, label="Brak tugma soni")
+    inspection_note = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 2}), label="Rang nazorati")
+    note = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 2}), label="Izoh")
 
-    class Meta:
-        model = Batch
-        fields = ["order", "order_item", "batch_no", "quantity", "stage", "status"]
-        widgets = {
-            "stage": forms.Select(),
-            "status": forms.Select(),
-        }
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, order=None, stage=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["stage"].initial = Stage.RANG_TAYYORLASH
-        self.fields["status"].initial = "NEW"
+        self.order = order
+        self.stage = stage
+        if stage == Stage.SARTIROVKA:
+            self.fields["quantity"].label = "Yaroqli tugma soni"
+            self.fields["scrap_quantity"].required = True
+            self.fields["inspection_note"].required = True
+        else:
+            self.fields["scrap_quantity"].widget = forms.HiddenInput()
+            self.fields["inspection_note"].widget = forms.HiddenInput()
 
     def clean(self):
         cleaned = super().clean()
-        order = cleaned.get("order")
-        order_item = cleaned.get("order_item")
-        if order and order_item and order_item.order_id != order.id:
-            raise forms.ValidationError("Tanlangan zakas qatori tanlangan zakasga tegishli emas.")
+        quantity = cleaned.get("quantity") or 0
+        scrap = cleaned.get("scrap_quantity") or 0
+        is_repeat = cleaned.get("is_repeat")
+
+        if self.stage == Stage.SARTIROVKA:
+            if quantity <= 0:
+                raise forms.ValidationError("Yaroqli tugma soni 0 dan katta bo'lishi kerak.")
+            if self.order and not is_repeat:
+                if quantity + scrap > self.order.remaining_button_count_for_stage(self.stage):
+                    raise forms.ValidationError("Qolgan tugma sonidan ko'p batch yaratib bo'lmaydi.")
+        else:
+            if self.order and not is_repeat:
+                if quantity > self.order.remaining_list_count_for_stage(self.stage):
+                    raise forms.ValidationError("Qolgan list sonidan ko'p batch yaratib bo'lmaydi.")
         return cleaned

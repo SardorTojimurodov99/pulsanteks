@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ order.order_no }}{% endblock %}
+
+{% block content %}
+<h1>{{ order.order_no }}</h1>
+
+<div class="card">
+    <p><strong>Firma:</strong> {{ order.customer_name }}</p>
+    <p><strong>Joriy bo'lim:</strong> {{ order.get_current_stage_display }}</p>
+    <p><strong>Qolgan miqdor:</strong> {{ order.remaining_quantity_for_current_stage }}</p>
+    {% if item %}
+    <p><strong>Razmer:</strong> {{ item.size }}</p>
+    <p><strong>Asosiy rang:</strong> {{ item.primary_color }}</p>
+    <p><strong>Qavat rangi:</strong> {{ item.secondary_color|default:'-' }}</p>
+    {% endif %}
+</div>
+
+<div class="two-col">
+    <div class="card">
+        <h3>Amallar</h3>
+        <form method="post" action="{% url 'worker_order_accept' order.pk %}">
+            {% csrf_token %}
+            <label>Qabul izohi</label>
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn btn-secondary" type="submit">Qabul qildim</button>
+        </form>
+
+        <form method="post" action="{% url 'worker_order_finish' order.pk %}">
+            {% csrf_token %}
+            <label>Tugatish izohi</label>
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn" type="submit">Tugatdim</button>
+        </form>
+    </div>
+
+    {% if batch_form %}
+    <div class="card">
+        <h3>Batch yaratish</h3>
+        <form method="post" action="{% url 'worker_create_batch' order.pk %}">
+            {% csrf_token %}
+            {{ batch_form.as_p }}
+            <button class="btn btn-warning" type="submit">Batch yaratish</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Oldingi batchlar</h3>
+    <table>
+        <thead><tr><th>Batch</th><th>Miqdor</th><th>Birlik</th><th>Stage</th><th>Holat</th></tr></thead>
+        <tbody>
+            {% for batch in order.batches.all %}
+            <tr>
+                <td>{{ batch.batch_no }}</td>
+                <td>{{ batch.quantity }}</td>
+                <td>{{ batch.get_unit_type_display }}</td>
+                <td>{{ batch.get_stage_display }}</td>
+                <td>{{ batch.get_status_display }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Batch yo'q.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

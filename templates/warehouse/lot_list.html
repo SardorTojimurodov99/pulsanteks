@@ -1,15 +1,35 @@
 {% extends "base.html" %}
+{% block title %}Ombor{% endblock %}
 {% block content %}
 <h1>Ombor</h1>
-<table>
-  <tr><th>Batch</th><th>Kirim</th><th>Qoldiq</th><th>Sana</th></tr>
-  {% for lot in lots %}
-  <tr>
-    <td>{{ lot.batch.batch_no }}</td>
-    <td>{{ lot.quantity }}</td>
-    <td>{{ lot.remaining_quantity }}</td>
-    <td>{{ lot.received_at }}</td>
-  </tr>
-  {% endfor %}
-</table>
+<div class="two-col">
+    <div class="card">
+        <h3>Qabul qilish</h3>
+        {% for batch in available_batches %}
+        <form method="post" action="{% url 'receive_batch' batch.pk %}">
+            {% csrf_token %}
+            <p><strong>{{ batch.batch_no }}</strong> — {{ batch.order.customer_name }} ({{ batch.quantity }} {{ batch.get_unit_type_display }})</p>
+            <label>Real miqdor</label>
+            <input type="number" name="quantity" min="1" value="{{ batch.quantity }}">
+            <label>Izoh</label>
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn" type="submit">Qabul qildim</button>
+        </form>
+        <hr>
+        {% empty %}
+        <p>Omborga kelgan batch yo'q.</p>
+        {% endfor %}
+    </div>
+    <div class="card">
+        <h3>Lotlar</h3>
+        <table>
+            <thead><tr><th>Batch</th><th>Zakaz</th><th>Qabul</th><th>Jo'natilgan</th><th>Qoldiq</th></tr></thead>
+            <tbody>
+                {% for lot in lots %}
+                <tr><td>{{ lot.batch.batch_no }}</td><td>{{ lot.batch.order.order_no }}</td><td>{{ lot.quantity }}</td><td>{{ lot.shipped_quantity }}</td><td>{{ lot.remaining_quantity }}</td></tr>
+                {% empty %}<tr><td colspan="5">Lot yo'q.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

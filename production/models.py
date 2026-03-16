@@ -3,7 +3,6 @@ from django.db import models
 
 
 class Stage(models.TextChoices):
-    QABUL = "QABUL", "Qabul"
     RANG_TAYYORLASH = "RANG_TAYYORLASH", "Rang tayyorlash"
     QUYISH = "QUYISH", "Quyish"
     APPARAT = "APPARAT", "Apparat"
@@ -16,10 +15,21 @@ class Stage(models.TextChoices):
 class BatchStatus(models.TextChoices):
     NEW = "NEW", "Yangi"
     IN_PROGRESS = "IN_PROGRESS", "Jarayonda"
-    DONE = "DONE", "Tayyor"
+    PAUSED = "PAUSED", "Pauzada"
+    HOLD = "HOLD", "To'xtatilgan"
     WAREHOUSE = "WAREHOUSE", "Omborda"
     SHIPPED = "SHIPPED", "Jo'natilgan"
-    HOLD = "HOLD", "To'xtatilgan"
+    DONE = "DONE", "Tugagan"
+
+
+class UnitType(models.TextChoices):
+    LIST = "LIST", "List"
+    BUTTON = "BUTTON", "Tugma"
+
+
+class MachineDepartment(models.TextChoices):
+    APPARAT = "APPARAT", "Apparat"
+    PALIROFKA = "PALIROFKA", "Palirofka"
 
 
 class MachineStatus(models.TextChoices):
@@ -39,20 +49,33 @@ class Batch(models.Model):
     order = models.ForeignKey("orders.Order", on_delete=models.CASCADE, related_name="batches")
     order_item = models.ForeignKey("orders.OrderItem", on_delete=models.CASCADE, related_name="batches")
     batch_no = models.CharField(max_length=50, unique=True)
-    quantity = models.PositiveIntegerField(verbose_name="Batch list soni")
-    stage = models.CharField(max_length=30, choices=Stage.choices, default=Stage.QABUL)
+    quantity = models.PositiveIntegerField(verbose_name="Miqdor")
+    unit_type = models.CharField(max_length=10, choices=UnitType.choices, default=UnitType.LIST)
+    source_stage = models.CharField(max_length=30, choices=Stage.choices)
+    stage = models.CharField(max_length=30, choices=Stage.choices)
     status = models.CharField(max_length=20, choices=BatchStatus.choices, default=BatchStatus.NEW)
+    is_repeat = models.BooleanField(default=False, verbose_name="Takror batch")
+    scrap_quantity = models.PositiveIntegerField(default=0, verbose_name="Brak soni")
+    inspection_note = models.TextField(blank=True, verbose_name="Rang nazorati")
+    note = models.TextField(blank=True, verbose_name="Izoh")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="created_batches",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["id"]
+        ordering = ["-id"]
 
     def __str__(self):
         return self.batch_no
 
-    def flow(self):
+    @staticmethod
+    def stage_sequence():
         return [
-            Stage.QABUL,
             Stage.RANG_TAYYORLASH,
             Stage.QUYISH,
             Stage.APPARAT,
@@ -63,7 +86,7 @@ class Batch(models.Model):
         ]
 
     def next_stage(self):
-        flow = self.flow()
+        flow = self.stage_sequence()
         try:
             idx = flow.index(self.stage)
         except ValueError:
@@ -71,6 +94,12 @@ class Batch(models.Model):
         if idx + 1 < len(flow):
             return flow[idx + 1]
         return None
+
+    @property
+    def department(self):
+        if self.stage == Stage.PALIROFKA:
+            return MachineDepartment.PALIROFKA
+        return MachineDepartment.APPARAT
 
 
 class StageLog(models.Model):
@@ -89,14 +118,10 @@ class StageLog(models.Model):
     class Meta:
         ordering = ["-changed_at"]
 
-    def __str__(self):
-        return f"{self.batch.batch_no}: {self.from_stage} -> {self.to_stage}"
-
 
 class StageProgress(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="progresses")
     stage = models.CharField(max_length=30, choices=Stage.choices)
-
     accepted_at = models.DateTimeField(null=True, blank=True)
     accepted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -105,7 +130,6 @@ class StageProgress(models.Model):
         on_delete=models.SET_NULL,
         related_name="accepted_stage_progresses",
     )
-
     finished_at = models.DateTimeField(null=True, blank=True)
     finished_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -114,23 +138,11 @@ class StageProgress(models.Model):
         on_delete=models.SET_NULL,
         related_name="finished_stage_progresses",
     )
-
     note = models.TextField(blank=True)
 
     class Meta:
         ordering = ["id"]
         unique_together = ("batch", "stage")
-
-    def __str__(self):
-        return f"{self.batch.batch_no} - {self.stage}"
-
-    @property
-    def is_accepted(self):
-        return self.accepted_at is not None
-
-    @property
-    def is_finished(self):
-        return self.finished_at is not None
 
     @property
     def duration_minutes(self):
@@ -141,20 +153,14 @@ class StageProgress(models.Model):
 
 
 class Machine(models.Model):
-    code = models.CharField(max_length=10, unique=True, verbose_name="Apparat kodi")
-    status = models.CharField(
-        max_length=20,
-        choices=MachineStatus.choices,
-        default=MachineStatus.IDLE,
-        verbose_name="Holati",
-    )
-    is_active = models.BooleanField(default=True, verbose_name="Faol")
-    note = models.TextField(blank=True, verbose_name="Izoh")
+    code = models.CharField(max_length=10, unique=True)
+    department = models.CharField(max_length=20, choices=MachineDepartment.choices, default=MachineDepartment.APPARAT)
+    status = models.CharField(max_length=20, choices=MachineStatus.choices, default=MachineStatus.IDLE)
+    is_active = models.BooleanField(default=True)
+    note = models.TextField(blank=True)
 
     class Meta:
-        ordering = ["code"]
-        verbose_name = "Apparat"
-        verbose_name_plural = "Apparatlar"
+        ordering = ["department", "code"]
 
     def __str__(self):
         return self.code
@@ -163,12 +169,10 @@ class Machine(models.Model):
 class MachineAssignment(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="machine_assignments")
     machine = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name="assignments")
-
     started_at = models.DateTimeField(null=True, blank=True)
     paused_at = models.DateTimeField(null=True, blank=True)
     resumed_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
-
     started_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -183,18 +187,12 @@ class MachineAssignment(models.Model):
         on_delete=models.SET_NULL,
         related_name="finished_machine_assignments",
     )
-
     is_active = models.BooleanField(default=True)
     is_finished = models.BooleanField(default=False)
     note = models.TextField(blank=True)
 
     class Meta:
         ordering = ["-id"]
-        verbose_name = "Apparat biriktirish"
-        verbose_name_plural = "Apparat biriktirishlar"
-
-    def __str__(self):
-        return f"{self.machine.code} - {self.batch.batch_no}"
 
     @property
     def duration_minutes(self):
@@ -228,30 +226,12 @@ class MachineBreakdown(models.Model):
         on_delete=models.SET_NULL,
         related_name="fixed_breakdowns",
     )
-
     reported_at = models.DateTimeField(auto_now_add=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     fixed_at = models.DateTimeField(null=True, blank=True)
-
-    status = models.CharField(
-        max_length=20,
-        choices=RepairStatus.choices,
-        default=RepairStatus.REPORTED,
-    )
-    reason = models.TextField(blank=True, verbose_name="Buzilish sababi")
-    note = models.TextField(blank=True, verbose_name="Izoh")
+    status = models.CharField(max_length=20, choices=RepairStatus.choices, default=RepairStatus.REPORTED)
+    reason = models.TextField(blank=True)
+    note = models.TextField(blank=True)
 
     class Meta:
         ordering = ["-id"]
-        verbose_name = "Buzilish"
-        verbose_name_plural = "Buzilishlar"
-
-    def __str__(self):
-        return f"{self.machine.code} / {self.batch.batch_no} / {self.status}"
-
-    @property
-    def repair_duration_minutes(self):
-        if self.accepted_at and self.fixed_at:
-            delta = self.fixed_at - self.accepted_at
-            return int(delta.total_seconds() // 60)
-        return None

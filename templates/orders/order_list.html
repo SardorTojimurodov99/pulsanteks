@@ -7,11 +7,9 @@
 
 <div class="card">
     <form method="get">
-        <label for="q">Qidiruv</label>
-        <input type="text" id="q" name="q" value="{{ q|default:'' }}" placeholder="Zakaz raqami yoki firma nomi">
-        <button class="btn" type="submit">Qidirish</button>
+        <input type="text" name="q" value="{{ q }}" placeholder="Zakaz raqami yoki firma nomi">
+        <button class="btn" type="submit">Izlash</button>
         <a class="btn btn-secondary" href="{% url 'order_create' %}">Yangi zakaz</a>
-        <a class="btn btn-secondary" href="{% url 'batch_create' %}">Batch yaratish</a>
     </form>
 </div>
 
@@ -21,9 +19,10 @@
             <tr>
                 <th>Zakaz</th>
                 <th>Firma</th>
-                <th>Qabul sanasi</th>
-                <th>Topshirish vaqti</th>
+                <th>Joriy bo'lim</th>
                 <th>Holati</th>
+                <th>Qolgan list</th>
+                <th>Qolgan tugma</th>
                 <th>Amal</th>
             </tr>
         </thead>
@@ -32,15 +31,14 @@
             <tr>
                 <td>{{ order.order_no }}</td>
                 <td>{{ order.customer_name }}</td>
-                <td>{{ order.accepted_at }}</td>
-                <td>{{ order.due_at }}</td>
+                <td>{{ order.get_current_stage_display }}</td>
                 <td>{{ order.get_status_display }}</td>
+                <td>{{ order.remaining_list_count }}</td>
+                <td>{{ order.remaining_button_count }}</td>
                 <td><a class="btn" href="{% url 'order_detail' order.pk %}">Ochish</a></td>
             </tr>
             {% empty %}
-            <tr>
-                <td colspan="6">Zakaz yo'q.</td>
-            </tr>
+            <tr><td colspan="7">Zakaz topilmadi.</td></tr>
             {% endfor %}
         </tbody>
     </table>

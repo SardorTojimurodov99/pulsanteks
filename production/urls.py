@@ -1,14 +1,18 @@
 from django.urls import path
-from . import views
-from . import views_worker
+
+from . import views, views_worker
 
 urlpatterns = [
     path("batches/", views.batch_list, name="batch_list"),
-    path("batches/create/", views.batch_create, name="batch_create"),
     path("batches/<int:pk>/", views.batch_detail, name="batch_detail"),
     path("batches/<int:pk>/advance/", views.batch_advance, name="batch_advance"),
 
     path("worker/", views_worker.worker_dashboard, name="worker_dashboard"),
+    path("worker/order/<int:pk>/", views_worker.worker_order_detail, name="worker_order_detail"),
+    path("worker/order/<int:pk>/accept/", views_worker.worker_order_accept, name="worker_order_accept"),
+    path("worker/order/<int:pk>/finish/", views_worker.worker_order_finish, name="worker_order_finish"),
+    path("worker/order/<int:pk>/batch/", views_worker.worker_create_batch, name="worker_create_batch"),
+
     path("worker/batch/<int:pk>/", views_worker.worker_batch_detail, name="worker_batch_detail"),
     path("worker/batch/<int:pk>/accept/", views_worker.worker_accept, name="worker_accept"),
     path("worker/batch/<int:pk>/finish/", views_worker.worker_finish, name="worker_finish"),

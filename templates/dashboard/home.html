@@ -1,69 +1,15 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard{% endblock %}
-
 {% block content %}
 <h1>Dashboard</h1>
-
-<div class="grid">
-    <div class="card"><strong>Jami zakazlar:</strong> {{ total_orders }}</div>
-    <div class="card"><strong>Jami batchlar:</strong> {{ total_batches }}</div>
-    <div class="card"><strong>Jarayondagi batchlar:</strong> {{ active_batches }}</div>
-    <div class="card"><strong>Ombordagi lotlar:</strong> {{ warehouse_lots }}</div>
-    <div class="card"><strong>Jo'natmalar:</strong> {{ shipments }}</div>
+<div class="stats">
+    <div class="card"><strong>Zakazlar</strong><br>{{ total_orders }}</div>
+    <div class="card"><strong>Batchlar</strong><br>{{ total_batches }}</div>
+    <div class="card"><strong>Jarayondagi batchlar</strong><br>{{ active_batches }}</div>
+    <div class="card"><strong>Ombor lotlari</strong><br>{{ warehouse_lots }}</div>
 </div>
-
-<div class="card">
-    <h3>Oxirgi zakazlar</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Raqam</th>
-                <th>Firma</th>
-                <th>Sana</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for order in latest_orders %}
-            <tr>
-                <td><a href="{% url 'order_detail' order.pk %}">{{ order.order_no }}</a></td>
-                <td>{{ order.customer_name }}</td>
-                <td>{{ order.accepted_at }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="3">Zakaz yo‘q.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<div class="card">
-    <h3>Oxirgi batchlar</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Batch</th>
-                <th>Zakas</th>
-                <th>Stage</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for batch in latest_batches %}
-            <tr>
-                <td><a href="{% url 'batch_detail' batch.pk %}">{{ batch.batch_no }}</a></td>
-                <td>{{ batch.order.order_no }}</td>
-                <td>{{ batch.get_stage_display }}</td>
-                <td>{{ batch.get_status_display }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4">Batch yo‘q.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="two-col">
+    <div class="card"><h3>Oxirgi zakazlar</h3><table><thead><tr><th>Zakaz</th><th>Firma</th><th>Holat</th></tr></thead><tbody>{% for order in latest_orders %}<tr><td><a href="{% url 'order_detail' order.pk %}">{{ order.order_no }}</a></td><td>{{ order.customer_name }}</td><td>{{ order.get_status_display }}</td></tr>{% empty %}<tr><td colspan="3">Zakaz yo'q.</td></tr>{% endfor %}</tbody></table></div>
+    <div class="card"><h3>Oxirgi batchlar</h3><table><thead><tr><th>Batch</th><th>Zakaz</th><th>Bo'lim</th></tr></thead><tbody>{% for batch in latest_batches %}<tr><td><a href="{% url 'batch_detail' batch.pk %}">{{ batch.batch_no }}</a></td><td>{{ batch.order.order_no }}</td><td>{{ batch.get_stage_display }}</td></tr>{% empty %}<tr><td colspan="3">Batch yo'q.</td></tr>{% endfor %}</tbody></table></div>
 </div>
 {% endblock %}
