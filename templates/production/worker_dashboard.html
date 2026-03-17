@@ -95,9 +95,8 @@
             <tr>
                 <th>Kod</th>
                 <th>Holat</th>
-                <th>Band</th>
-                <th>Bo'sh joy</th>
-                <th>Joriy ishlar</th>
+                <th>Joriy batch</th>
+                <th>Zakas</th>
                 <th>Amal</th>
             </tr>
         </thead>
@@ -106,17 +105,24 @@
             <tr>
                 <td>{{ row.machine.code }}</td>
                 <td>{{ row.machine.get_status_display }}</td>
-                <td>{{ row.active_count }}</td>
-                <td>{{ row.remaining_capacity }}</td>
                 <td>
-                    {% for a in row.active_assignments %}
-                        <div>{% if a.batch %}{{ a.batch.batch_no }}{% else %}{{ a.order.order_no }}{% endif %}</div>
-                    {% empty %}-{% endfor %}
+                    {% if row.active_assignment %}
+                        {{ row.active_assignment.batch.batch_no }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.active_assignment %}
+                        {{ row.active_assignment.batch.order.order_no }}
+                    {% else %}
+                        -
+                    {% endif %}
                 </td>
                 <td><a class="btn" href="{% url 'machine_detail' row.machine.pk %}">Ochish</a></td>
             </tr>
             {% empty %}
-            <tr><td colspan="6">Apparat yo'q.</td></tr>
+            <tr><td colspan="5">Apparat yo'q.</td></tr>
             {% endfor %}
         </tbody>
     </table>

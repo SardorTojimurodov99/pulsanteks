@@ -16,8 +16,8 @@
             {% for b in breakdowns %}
             <tr>
                 <td>{{ b.machine.code }}</td>
-                <td>{{ b.work_label }}</td>
-                <td>{% if b.batch %}{{ b.batch.order.order_no }}{% elif b.order %}{{ b.order.order_no }}{% endif %}</td>
+                <td>{{ b.batch.batch_no }}</td>
+                <td>{{ b.batch.order.order_no }}</td>
                 <td>{{ b.get_status_display }}</td>
                 <td>{{ b.reason|default:'-' }}</td>
                 <td>

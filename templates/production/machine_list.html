@@ -1,26 +1,38 @@
 {% extends "base.html" %}
 
-{% block title %}Apparatlar paneli{% endblock %}
+{% block title %}Apparatlar{% endblock %}
 
 {% block content %}
 <h1>Apparatlar paneli</h1>
+<div class="card tabs">
+    <a class="btn btn-secondary" href="{% url 'worker_dashboard' %}">Ishlar</a>
+    <a class="btn" href="{% url 'machine_panel' %}">Apparatlar</a>
+    <a class="btn btn-secondary" href="{% url 'mechanic_dashboard' %}">Mexanik</a>
+</div>
+<style>
+.machine-groups{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}.machine-group{background:#fff;border:1px solid #ddd;border-radius:14px;padding:18px}.machine-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.machine-card{border-radius:12px;padding:14px;min-height:150px;border:1px solid #ddd}.machine-idle{background:#f3f4f6}.machine-running{background:#dcfce7}.machine-paused{background:#fef3c7}.machine-broken{background:#fee2e2}@media(max-width:1000px){.machine-groups{grid-template-columns:1fr}}@media(max-width:700px){.machine-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.machine-grid{grid-template-columns:1fr}}
+</style>
 <div class="machine-groups">
     {% for block_name, items in grouped.items %}
     <div class="machine-group">
-        <h2>{{ block_name }} blok</h2>
+        <h2>{% if block_name == 'P' %}Palirofka{% else %}{{ block_name }} blok{% endif %}</h2>
         <div class="machine-grid">
             {% for item in items %}
-            <div class="machine-card {% if item.machine.status == 'RUNNING' %}machine-running{% elif item.machine.status == 'PAUSED' %}machine-paused{% elif item.machine.status == 'BROKEN' %}machine-broken{% else %}machine-idle{% endif %}">
-                <div class="status-badge">{{ item.machine.get_status_display }}</div>
-                <h3>{{ item.machine.code }}</h3>
-                <p><strong>Band:</strong> {{ item.active_count }} / {{ item.machine.capacity }}</p>
-                <p><strong>Ishlar:</strong>
-                    {% for a in item.active_assignments %}
-                        {% if a.batch %}{{ a.batch.batch_no }}{% else %}{{ a.order.order_no }}{% endif %}{% if not forloop.last %}, {% endif %}
-                    {% empty %}yo'q{% endfor %}
-                </p>
-                <a class="btn" href="{% url 'machine_detail' item.machine.pk %}">Ochish</a>
+            {% with machine=item.machine active=item.active_assignment %}
+            <div class="machine-card {% if machine.status == 'RUNNING' %}machine-running{% elif machine.status == 'PAUSED' %}machine-paused{% elif machine.status == 'BROKEN' %}machine-broken{% else %}machine-idle{% endif %}">
+                <h3>{{ machine.code }}</h3>
+                <p><strong>Holat:</strong> {{ machine.get_status_display }}</p>
+                {% if active %}
+                <p><strong>Batch:</strong> {{ active.batch.batch_no }}</p>
+                <p><strong>Firma:</strong> {{ active.batch.order.customer_name }}</p>
+                {% else %}
+                <p><strong>Batch:</strong> yo'q</p>
+                {% endif %}
+                <a class="btn" href="{% url 'machine_detail' machine.pk %}">Ochish</a>
             </div>
+            {% endwith %}
+            {% empty %}
+            <p class="muted">Apparat yo'q.</p>
             {% endfor %}
         </div>
     </div>

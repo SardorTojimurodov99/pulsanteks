@@ -7,17 +7,23 @@
 <div class="card">
     <p><strong>Bo'lim:</strong> {{ machine.get_department_display }}</p>
     <p><strong>Holati:</strong> {{ machine.get_status_display }}</p>
-    <p><strong>Sig'imi:</strong> {{ machine.capacity }}</p>
-    <p><strong>Band:</strong> {{ active_count }}</p>
-    <p><strong>Bo'sh joy:</strong> {{ remaining_capacity }}</p>
 </div>
-
 <div class="two-col">
     <div class="card">
-        <h3>Batch ulash</h3>
+        <h3>Joriy batch</h3>
+        {% if active_assignment %}
+            <p><strong>Batch:</strong> {{ active_assignment.batch.batch_no }}</p>
+            <p><strong>Zakaz:</strong> {{ active_assignment.batch.order.order_no }}</p>
+            <p><strong>Boshlangan:</strong> {{ active_assignment.started_at|default:'-' }}</p>
+            <p><strong>Pauza:</strong> {{ active_assignment.paused_at|default:'-' }}</p>
+        {% else %}
+            <p>Aktiv batch yo'q.</p>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h3>Batch biriktirish</h3>
         <form method="post" action="{% url 'machine_start' machine.pk %}">
             {% csrf_token %}
-            <input type="hidden" name="work_type" value="batch">
             <label>Batch</label>
             <select name="batch_id">
                 {% for batch in available_batches %}
@@ -26,99 +32,59 @@
             </select>
             <label>Izoh</label>
             <textarea name="note" rows="2"></textarea>
-            <button class="btn" type="submit">Batchni boshlash</button>
+            <button class="btn" type="submit">Boshlash</button>
         </form>
     </div>
-
+</div>
+{% if active_assignment %}
+<div class="grid-3">
     <div class="card">
-        <h3>Zakazni ulash</h3>
-        <form method="post" action="{% url 'machine_start' machine.pk %}">
-            {% csrf_token %}
-            <input type="hidden" name="work_type" value="order">
-            <label>Zakaz</label>
-            <select name="order_id">
-                {% for order in available_orders %}
-                <option value="{{ order.pk }}">{{ order.order_no }} - {{ order.customer_name }}</option>
-                {% endfor %}
-            </select>
-            <label>Izoh</label>
+        <form method="post" action="{% url 'machine_pause' machine.pk %}">
+            {% csrf_token %}<input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
             <textarea name="note" rows="2"></textarea>
-            <button class="btn btn-secondary" type="submit">Zakazni boshlash</button>
+            <button class="btn btn-secondary" type="submit">Pauza</button>
+        </form>
+    </div>
+    <div class="card">
+        <form method="post" action="{% url 'machine_resume' machine.pk %}">
+            {% csrf_token %}<input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn" type="submit">Davom ettirish</button>
+        </form>
+    </div>
+    <div class="card">
+        <form method="post" action="{% url 'machine_finish' machine.pk %}">
+            {% csrf_token %}<input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
+            <textarea name="note" rows="2"></textarea>
+            <button class="btn" type="submit">Tugatdi</button>
         </form>
     </div>
 </div>
-
 <div class="card">
-    <h3>Joriy ishlayotganlar</h3>
-    <table>
-        <thead><tr><th>Turi</th><th>Raqam</th><th>Firma</th><th>Boshlangan</th><th>Amallar</th></tr></thead>
-        <tbody>
-            {% for a in active_assignments %}
-            <tr>
-                <td>{% if a.batch %}Batch{% else %}Zakaz{% endif %}</td>
-                <td>{{ a.work_label }}</td>
-                <td>{{ a.work_customer }}</td>
-                <td>{{ a.started_at|default:'-' }}</td>
-                <td>
-                    <form method="post" action="{% url 'machine_pause' machine.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        {% if a.batch %}
-                        <input type="hidden" name="work_type" value="batch"><input type="hidden" name="batch_id" value="{{ a.batch.pk }}">
-                        {% else %}
-                        <input type="hidden" name="work_type" value="order"><input type="hidden" name="order_id" value="{{ a.order.pk }}">
-                        {% endif %}
-                        <button class="btn btn-secondary" type="submit">Pauza</button>
-                    </form>
-                    <form method="post" action="{% url 'machine_resume' machine.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        {% if a.batch %}
-                        <input type="hidden" name="work_type" value="batch"><input type="hidden" name="batch_id" value="{{ a.batch.pk }}">
-                        {% else %}
-                        <input type="hidden" name="work_type" value="order"><input type="hidden" name="order_id" value="{{ a.order.pk }}">
-                        {% endif %}
-                        <button class="btn" type="submit">Davom</button>
-                    </form>
-                    <form method="post" action="{% url 'machine_finish' machine.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        {% if a.batch %}
-                        <input type="hidden" name="work_type" value="batch"><input type="hidden" name="batch_id" value="{{ a.batch.pk }}">
-                        {% else %}
-                        <input type="hidden" name="work_type" value="order"><input type="hidden" name="order_id" value="{{ a.order.pk }}">
-                        {% endif %}
-                        <button class="btn" type="submit">Tugatdi</button>
-                    </form>
-                    <form method="post" action="{% url 'machine_broken' machine.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        {% if a.batch %}
-                        <input type="hidden" name="work_type" value="batch"><input type="hidden" name="batch_id" value="{{ a.batch.pk }}">
-                        {% else %}
-                        <input type="hidden" name="work_type" value="order"><input type="hidden" name="order_id" value="{{ a.order.pk }}">
-                        {% endif %}
-                        <input type="hidden" name="reason" value="">
-                        <button class="btn btn-danger" type="submit">Buzildi</button>
-                    </form>
-                </td>
-            </tr>
-            {% empty %}<tr><td colspan="5">Joriy ish yo'q.</td></tr>{% endfor %}
-        </tbody>
-    </table>
+    <form method="post" action="{% url 'machine_broken' machine.pk %}">
+        {% csrf_token %}<input type="hidden" name="batch_id" value="{{ active_assignment.batch.pk }}">
+        <label>Buzilish sababi</label>
+        <textarea name="reason" rows="2"></textarea>
+        <label>Izoh</label>
+        <textarea name="note" rows="2"></textarea>
+        <button class="btn btn-danger" type="submit">Buzildi</button>
+    </form>
 </div>
-
+{% endif %}
 <div class="card">
     <h3>Tarix</h3>
     <table>
-        <thead><tr><th>Turi</th><th>Raqam</th><th>Boshlangan</th><th>Pauza</th><th>Davom</th><th>Tugatildi</th></tr></thead>
+        <thead><tr><th>Batch</th><th>Boshlangan</th><th>Pauza</th><th>Davom</th><th>Tugatildi</th></tr></thead>
         <tbody>
             {% for a in assignments %}
             <tr>
-                <td>{% if a.batch %}Batch{% else %}Zakaz{% endif %}</td>
-                <td>{{ a.work_label }}</td>
+                <td>{{ a.batch.batch_no }}</td>
                 <td>{{ a.started_at|default:'-' }}</td>
                 <td>{{ a.paused_at|default:'-' }}</td>
                 <td>{{ a.resumed_at|default:'-' }}</td>
                 <td>{{ a.finished_at|default:'-' }}</td>
             </tr>
-            {% empty %}<tr><td colspan="6">Tarix yo'q.</td></tr>{% endfor %}
+            {% empty %}<tr><td colspan="5">Tarix yo'q.</td></tr>{% endfor %}
         </tbody>
     </table>
 </div>

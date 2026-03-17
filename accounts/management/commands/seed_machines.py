@@ -18,13 +18,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for code in APPARAT_CODES:
-            Machine.objects.update_or_create(
-                code=code,
-                defaults={"department": MachineDepartment.APPARAT, "capacity": 1},
-            )
+            Machine.objects.get_or_create(code=code, defaults={"department": MachineDepartment.APPARAT})
         for code in PALIROFKA_CODES:
-            Machine.objects.update_or_create(
-                code=code,
-                defaults={"department": MachineDepartment.PALIROFKA, "capacity": 5},
-            )
+            Machine.objects.get_or_create(code=code, defaults={"department": MachineDepartment.PALIROFKA})
         self.stdout.write(self.style.SUCCESS("Apparatlar yaratildi."))
